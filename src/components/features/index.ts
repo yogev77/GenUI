@@ -15,3 +15,4 @@ export { default as SolarSystemSimulator } from './SolarSystemSimulator';
 export { default as ParticleGarden } from './ParticleGarden';
 export { default as KaleidoscopeCreator } from './KaleidoscopeCreator';
 export { default as TextStyler } from './TextStyler';
+export { default as MorphingBrush } from './MorphingBrush';
