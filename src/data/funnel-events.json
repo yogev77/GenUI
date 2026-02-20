@@ -173,5 +173,28 @@
     "sessionId": "f91rd69v",
     "type": "page_view",
     "timestamp": "2026-02-20T15:26:25.685Z"
+  },
+  {
+    "funnelId": "tinytap",
+    "pageName": "TinyTapLanding",
+    "sessionId": "rnu17gzh",
+    "type": "page_view",
+    "timestamp": "2026-02-20T15:35:39.262Z"
+  },
+  {
+    "funnelId": "tinytap",
+    "pageName": "TinyTapLanding",
+    "sessionId": "rnu17gzh",
+    "type": "scroll_depth",
+    "value": 58,
+    "timestamp": "2026-02-20T15:35:40.891Z"
+  },
+  {
+    "funnelId": "tinytap",
+    "pageName": "TinyTapLanding",
+    "sessionId": "rnu17gzh",
+    "type": "email_capture",
+    "value": "d@gmail.com",
+    "timestamp": "2026-02-20T15:35:51.018Z"
   }
 ]

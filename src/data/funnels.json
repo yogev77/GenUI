@@ -53,11 +53,11 @@
     ],
     "createdAt": "2026-02-20T12:11:46.791Z",
     "kpis": {
-      "totalVisitors": 2,
+      "totalVisitors": 3,
       "ctaClicks": 0,
-      "emailCaptures": 0,
+      "emailCaptures": 1,
       "fakePurchases": 0,
-      "avgScrollDepth": 0,
+      "avgScrollDepth": 19.333333333333332,
       "conversionRate": 0
     },
     "logs": [],
