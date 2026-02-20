@@ -12,5 +12,19 @@
     "sessionId": "t9ni7n3j",
     "type": "page_view",
     "timestamp": "2026-02-20T10:54:19.973Z"
+  },
+  {
+    "funnelId": "eddy-english-lessons",
+    "pageName": "EddyEnglishLanding",
+    "sessionId": "ekjye4gy",
+    "type": "page_view",
+    "timestamp": "2026-02-20T11:48:09.664Z"
+  },
+  {
+    "funnelId": "eddy-english-lessons",
+    "pageName": "EddyEnglishLanding",
+    "sessionId": "fve7858z",
+    "type": "page_view",
+    "timestamp": "2026-02-20T11:48:29.117Z"
   }
 ]
