@@ -40,5 +40,12 @@
     "sessionId": "7udmkrnh",
     "type": "page_view",
     "timestamp": "2026-02-20T12:09:23.406Z"
+  },
+  {
+    "funnelId": "eddy-english-lessons",
+    "pageName": "EddyEnglishLanding",
+    "sessionId": "7udmkrnh",
+    "type": "page_view",
+    "timestamp": "2026-02-20T12:10:26.444Z"
   }
 ]
