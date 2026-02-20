@@ -2,3 +2,4 @@
 
 export { default as Stopwatch } from './Stopwatch';
 export { default as RandomProgressBar } from './RandomProgressBar';
+export { default as ColorHarmony } from './ColorHarmony';
