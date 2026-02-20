@@ -124,6 +124,11 @@ export default function FeatureCard({
   const handleInteraction = useCallback(
     (e: React.MouseEvent) => {
       const target = e.target as HTMLElement;
+      // Skip if clicking card-level controls (top bar buttons)
+      if (target.closest("[data-card-control]")) return;
+
+      // Any interaction with content expands the tile
+      if (!expanded) setExpanded(true);
 
       if (
         target.closest("button") ||
@@ -152,7 +157,7 @@ export default function FeatureCard({
         onFrustration();
       }
     },
-    [name, onFrustration]
+    [name, onFrustration, expanded]
   );
 
   return (
@@ -169,6 +174,7 @@ export default function FeatureCard({
       {/* Left arrow — reorder */}
       {!isFirst && (
         <button
+          data-card-control
           onClick={(e) => { e.stopPropagation(); onMoveLeft?.(); }}
           className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 hover:bg-violet-600 border border-gray-700 hover:border-violet-500 rounded-full w-6 h-6 flex items-center justify-center cursor-pointer shadow-lg"
           title="Move left"
@@ -182,6 +188,7 @@ export default function FeatureCard({
       {/* Right arrow — reorder */}
       {!isLast && (
         <button
+          data-card-control
           onClick={(e) => { e.stopPropagation(); onMoveRight?.(); }}
           className="absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 hover:bg-violet-600 border border-gray-700 hover:border-violet-500 rounded-full w-6 h-6 flex items-center justify-center cursor-pointer shadow-lg"
           title="Move right"
@@ -197,7 +204,7 @@ export default function FeatureCard({
         <h3 className="text-xs font-medium text-gray-500 font-mono truncate mr-2">
           {name.replace(/([A-Z])/g, " $1").trim()}
         </h3>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <div data-card-control className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
           <button
             onClick={(e) => { e.stopPropagation(); handleImprove(); }}
             disabled={improving}
