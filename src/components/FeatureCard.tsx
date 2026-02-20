@@ -42,9 +42,12 @@ export default function FeatureCard({
     ensureSession();
   }, []);
 
-  // Close expanded on click outside
+  // Scroll into view + close on click outside / Escape
   useEffect(() => {
     if (!expanded) return;
+    // Scroll the tile into view smoothly
+    containerRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
     function handleClick(e: MouseEvent) {
       if (
         containerRef.current &&
@@ -251,7 +254,7 @@ export default function FeatureCard({
         }`}
         style={{ contain: "layout paint", isolation: "isolate" }}
       >
-        <div className="w-full h-full overflow-auto scrollbar-thin">
+        <div className="w-full h-full overflow-auto scrollbar-thin overscroll-contain">
           <div className="w-full [&>*]:w-full [&>*]:max-w-full [&_canvas]:max-w-full [&_img]:max-w-full [&_svg]:max-w-full">
             <FeatureErrorBoundary name={name} onCrash={onCrash}>
               <Component />
