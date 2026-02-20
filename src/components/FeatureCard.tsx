@@ -45,8 +45,10 @@ export default function FeatureCard({
   // Scroll into view + close on click outside / Escape
   useEffect(() => {
     if (!expanded) return;
-    // Scroll the tile into view smoothly
-    containerRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    // Scroll so the full expanded tile is visible
+    requestAnimationFrame(() => {
+      containerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
 
     function handleClick(e: MouseEvent) {
       if (
