@@ -62,5 +62,37 @@
     },
     "logs": [],
     "experiments": []
+  },
+  {
+    "id": "packing-unpacking-services",
+    "productInfo": {
+      "productName": "Packing & Unpacking Services",
+      "productType": "service",
+      "description": "Professional packing and unpacking services for moving, ranging from full-service packing to specialized handling of fragile items like art and electronics. Includes custom crating, Photo Perfect Packing service, and eco-friendly moving boxes made from 100% recycled materials.",
+      "price": "300",
+      "targetAudience": "People moving homes or offices who want professional packing assistance",
+      "uniqueSellingPoints": [
+        "Photo Perfect Packing service recreates your home setup exactly",
+        "100% recycled moving boxes with 50% savings and buyback program",
+        "Flexible service levels from full-service to partial packing assistance"
+      ],
+      "tone": "professional"
+    },
+    "pages": [
+      "PackingServicesLanding",
+      "PackingServicesDetails",
+      "PackingServicesCheckout"
+    ],
+    "createdAt": "2026-02-20T15:49:59.642Z",
+    "kpis": {
+      "totalVisitors": 0,
+      "ctaClicks": 0,
+      "emailCaptures": 0,
+      "fakePurchases": 0,
+      "avgScrollDepth": 0,
+      "conversionRate": 0
+    },
+    "logs": [],
+    "experiments": []
   }
 ]
