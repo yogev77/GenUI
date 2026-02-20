@@ -13,3 +13,4 @@ export { default as GeometricShapeDrawer } from './GeometricShapeDrawer';
 export { default as FireworksSimulator } from './FireworksSimulator';
 export { default as SolarSystemSimulator } from './SolarSystemSimulator';
 export { default as ParticleGarden } from './ParticleGarden';
+export { default as KaleidoscopeCreator } from './KaleidoscopeCreator';

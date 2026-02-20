@@ -2,46 +2,71 @@
   "features": {
     "WaveformSynth": {
       "totalInteractions": 0,
-      "totalViewTimeMs": 915693,
+      "totalViewTimeMs": 1119206,
       "uniqueSessions": 0
     },
     "RandomProgressBar": {
-      "totalInteractions": 1,
-      "totalViewTimeMs": 2726695,
-      "uniqueSessions": 1
+      "totalInteractions": 2,
+      "totalViewTimeMs": 3267083,
+      "uniqueSessions": 2
     },
     "Stopwatch": {
       "totalInteractions": 0,
-      "totalViewTimeMs": 1912795,
+      "totalViewTimeMs": 2293272,
       "uniqueSessions": 0
     },
     "PixelArt": {
       "totalInteractions": 0,
-      "totalViewTimeMs": 3692045,
+      "totalViewTimeMs": 4433004,
       "uniqueSessions": 0
     },
     "FlowField": {
-      "totalInteractions": 14,
-      "totalViewTimeMs": 2534750,
-      "uniqueSessions": 2
+      "totalInteractions": 22,
+      "totalViewTimeMs": 3059621,
+      "uniqueSessions": 3
     },
     "FeatureTimeline": {
       "totalInteractions": 0,
-      "totalViewTimeMs": 6535931,
+      "totalViewTimeMs": 7858134,
       "uniqueSessions": 0
     },
     "ColorHarmony": {
       "totalInteractions": 0,
-      "totalViewTimeMs": 7174156,
+      "totalViewTimeMs": 8822935,
       "uniqueSessions": 0
     },
     "AdaptiveGrid": {
       "totalInteractions": 0,
-      "totalViewTimeMs": 3481847,
+      "totalViewTimeMs": 4393718,
+      "uniqueSessions": 0
+    },
+    "FireworksSimulator": {
+      "totalInteractions": 8,
+      "totalViewTimeMs": 42080,
+      "uniqueSessions": 1
+    },
+    "GeometricShapeDrawer": {
+      "totalInteractions": 7,
+      "totalViewTimeMs": 44985,
+      "uniqueSessions": 1
+    },
+    "ParticleGarden": {
+      "totalInteractions": 4,
+      "totalViewTimeMs": 22733,
+      "uniqueSessions": 1
+    },
+    "MandelbrotExplorer": {
+      "totalInteractions": 2,
+      "totalViewTimeMs": 22733,
+      "uniqueSessions": 1
+    },
+    "SolarSystemSimulator": {
+      "totalInteractions": 0,
+      "totalViewTimeMs": 15231,
       "uniqueSessions": 0
     }
   },
-  "totalUsers": 6,
-  "totalSessions": 11,
-  "lastUpdated": "2026-02-20T02:12:01.040Z"
+  "totalUsers": 7,
+  "totalSessions": 13,
+  "lastUpdated": "2026-02-20T02:22:23.356Z"
 }
