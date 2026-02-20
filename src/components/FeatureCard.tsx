@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { recordInteraction, recordViewTime, ensureSession } from "@/lib/usage";
+import { getCode } from "@/lib/auth";
 import FeatureErrorBoundary from "./FeatureErrorBoundary";
 
 type CardSize = "s" | "m" | "l";
@@ -53,6 +54,7 @@ export default function FeatureCard({
   isDragTarget?: boolean;
 }) {
   const [size, setSize] = useState<CardSize>("s");
+  const [improving, setImproving] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const viewStartRef = useRef<number | null>(null);
   const frustrationRef = useRef<{
@@ -107,6 +109,34 @@ export default function FeatureCard({
     setSize(next);
     saveSize(name, next);
   }, [size, name]);
+
+  const handleImprove = useCallback(async () => {
+    if (improving) return;
+    setImproving(true);
+    try {
+      const res = await fetch("/api/improve", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-access-code": getCode(),
+        },
+        body: JSON.stringify({ componentName: name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      if (data.deploying) {
+        // Production — wait for Vercel redeploy
+        await new Promise((r) => setTimeout(r, 50000));
+        window.location.reload();
+      }
+      // Dev — HMR handles it
+    } catch (err) {
+      console.error("Improve failed:", err);
+    } finally {
+      setImproving(false);
+    }
+  }, [name, improving]);
 
   // Track any interaction inside the card content area
   const handleInteraction = useCallback(
@@ -190,6 +220,17 @@ export default function FeatureCard({
           <button
             onClick={(e) => {
               e.stopPropagation();
+              handleImprove();
+            }}
+            disabled={improving}
+            className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-gray-800 hover:bg-violet-600/30 text-gray-500 hover:text-violet-300 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-wait"
+            title="Improve this feature with AI"
+          >
+            {improving ? "..." : "✦"}
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
               cycleSize();
             }}
             className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-gray-800 hover:bg-gray-700 text-gray-500 hover:text-gray-300 cursor-pointer transition-colors"
@@ -221,6 +262,18 @@ export default function FeatureCard({
           </button>
         </div>
       </div>
+
+      {/* Improving overlay */}
+      {improving && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-900/80 rounded-2xl">
+          <div className="flex items-center gap-2 text-violet-400 text-sm">
+            <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            Improving...
+          </div>
+        </div>
+      )}
 
       {/* Content — sandboxed */}
       <div

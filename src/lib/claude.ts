@@ -60,10 +60,12 @@ You can create ANY of these:
 
 Think about what would be most valuable RIGHT NOW given what already exists and what the user has asked for. Explain your reasoning briefly.
 
+ALLOWED: Text inputs (input, textarea) for LOCAL-ONLY use within the component. Examples: typing games, text transforms, word counters, note pads, search/filter within the widget. The text must stay inside the component — never sent anywhere.
+
 ABSOLUTE RESTRICTIONS — you MUST NEVER generate any of these:
 - Components that modify the site itself (no admin panels, no site editors, no settings managers, no theme changers that affect the page)
 - Components that interact with the communication/chat area, the generate button, or any core site UI
-- Components that call fetch(), XMLHttpRequest, or any network requests
+- Components that call fetch(), XMLHttpRequest, or any network requests — NO AI, NO APIs, NO sending user text anywhere
 - Components that access localStorage, sessionStorage, cookies, or any browser storage APIs
 - Components that use window.location, history, or navigate the page
 - Components that create forms for submitting data to the site or attempt to control other features
@@ -95,6 +97,76 @@ Respond with ONLY a JSON object (no markdown, no code fences):
   "fileName": "PascalCaseName",
   "reasoning": "1-2 sentences on why you chose this and what value it adds",
   "code": "the full component code as a string"
+}`,
+      },
+    ],
+  });
+
+  const text =
+    message.content[0].type === "text" ? message.content[0].text : "";
+
+  const cleaned = text
+    .replace(/^```json?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+  const parsed = JSON.parse(cleaned);
+
+  return {
+    componentName: parsed.componentName,
+    fileName: parsed.fileName,
+    code: parsed.code,
+    reasoning: parsed.reasoning || "",
+  };
+}
+
+export async function improveFeature(
+  componentName: string,
+  fileName: string,
+  existingCode: string
+): Promise<GeneratedFeature> {
+  const message = await client.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 4096,
+    messages: [
+      {
+        role: "user",
+        content: `You are improving an existing component on GenUI — a self-evolving website.
+
+The component is called "${componentName}". Here is its current code:
+
+\`\`\`tsx
+${existingCode}
+\`\`\`
+
+IMPROVE this component. Make it better — more polished, more interactive, better visuals, smoother animations, more features, better UX. Keep the same core concept but level it up significantly.
+
+ALLOWED: Text inputs (input, textarea) for LOCAL-ONLY use within the component. The text must stay inside the component — never sent anywhere.
+
+ABSOLUTE RESTRICTIONS — you MUST NEVER generate any of these:
+- Components that call fetch(), XMLHttpRequest, or any network requests — NO AI, NO APIs
+- Components that access localStorage, sessionStorage, cookies, or any browser storage APIs
+- Components that use window.location, history, or navigate the page
+- Components that use eval(), Function(), dynamic script injection, or iframe
+- Components that access DOM outside their own component tree
+
+Requirements:
+- First line MUST be: "use client";
+- Export default a functional React component
+- Use ONLY Tailwind CSS for styling
+- Fully self-contained — NO external API calls, NO external images/assets
+- RESPONSIVE: use w-full and relative units, never fixed pixel widths
+- You may use inline SVG, CSS animations via Tailwind, Web Audio API, Canvas API
+- Do NOT import anything except React hooks from 'react'
+- CRITICAL TypeScript rules:
+  - Type ALL useRef calls, useState calls with explicit generics when needed
+  - Guard all .current access on refs with null checks
+
+Respond with ONLY a JSON object (no markdown, no code fences):
+{
+  "componentName": "${componentName}",
+  "fileName": "${fileName}",
+  "reasoning": "1-2 sentences on what you improved",
+  "code": "the full improved component code as a string"
 }`,
       },
     ],
