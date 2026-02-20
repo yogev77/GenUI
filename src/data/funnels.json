@@ -62,5 +62,37 @@
     },
     "logs": [],
     "experiments": []
+  },
+  {
+    "id": "eddy-1-1-english-lessons",
+    "productInfo": {
+      "productName": "Eddy - 1:1 English Lessons",
+      "productType": "service",
+      "description": "Personalized one-on-one English language learning lessons with an instructor named Eddy. The service provides individualized English education through direct tutoring sessions.",
+      "price": "25.00",
+      "targetAudience": "English language learners seeking personalized instruction and individual attention",
+      "uniqueSellingPoints": [
+        "One-on-one personalized lessons",
+        "Individual attention from dedicated instructor",
+        "Customized learning approach"
+      ],
+      "tone": "professional"
+    },
+    "pages": [
+      "EddyLanding",
+      "EddyDetails",
+      "EddyCheckout"
+    ],
+    "createdAt": "2026-02-20T15:18:36.186Z",
+    "kpis": {
+      "totalVisitors": 0,
+      "ctaClicks": 0,
+      "emailCaptures": 0,
+      "fakePurchases": 0,
+      "avgScrollDepth": 0,
+      "conversionRate": 0
+    },
+    "logs": [],
+    "experiments": []
   }
 ]
