@@ -43,7 +43,7 @@ export default function FeatureCard({
     ensureSession();
   }, []);
 
-  // Compute transform to fly tile to viewport center
+  // Scroll into view, then compute transform to fly tile to viewport center
   useEffect(() => {
     if (!expanded || !containerRef.current) {
       setTransform("");
@@ -51,18 +51,42 @@ export default function FeatureCard({
     }
 
     const el = containerRef.current;
-    const rect = el.getBoundingClientRect();
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
 
-    const scale = 1.3;
-    // Center of element vs center of viewport
-    const elCenterX = rect.left + rect.width / 2;
-    const elCenterY = rect.top + rect.height / 2;
-    const dx = vw / 2 - elCenterX;
-    const dy = vh / 2 - elCenterY;
+    // First scroll so the tile is in view, then calculate centering transform
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
 
-    setTransform(`translate(${dx}px, ${dy}px) scale(${scale})`);
+    // Wait for scroll to settle, then compute final transform
+    const timer = setTimeout(() => {
+      const rect = el.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      const scale = 1.3;
+      const expandedHeight = 500 + 32; // content h + top bar approx
+      const scaledHeight = expandedHeight * scale;
+      const scaledWidth = rect.width * scale;
+
+      // Center of element vs center of viewport
+      const elCenterX = rect.left + rect.width / 2;
+      const elCenterY = rect.top + rect.height / 2;
+
+      // Clamp so scaled tile doesn't overflow viewport
+      let dx = vw / 2 - elCenterX;
+      let dy = vh / 2 - elCenterY;
+
+      // Ensure edges stay within viewport
+      const leftEdge = rect.left + dx - (scaledWidth - rect.width) / 2;
+      const rightEdge = leftEdge + scaledWidth;
+      const topEdge = rect.top + dy - (scaledHeight - rect.height) / 2;
+      const bottomEdge = topEdge + scaledHeight;
+
+      if (leftEdge < 8) dx += 8 - leftEdge;
+      if (rightEdge > vw - 8) dx -= rightEdge - (vw - 8);
+      if (topEdge < 8) dy += 8 - topEdge;
+      if (bottomEdge > vh - 8) dy -= bottomEdge - (vh - 8);
+
+      setTransform(`translate(${dx}px, ${dy}px) scale(${scale})`);
+    }, 400);
 
     function handleClick(e: MouseEvent) {
       if (el && !el.contains(e.target as Node)) {
@@ -75,6 +99,7 @@ export default function FeatureCard({
     document.addEventListener("mousedown", handleClick);
     document.addEventListener("keydown", handleKey);
     return () => {
+      clearTimeout(timer);
       document.removeEventListener("mousedown", handleClick);
       document.removeEventListener("keydown", handleKey);
     };
