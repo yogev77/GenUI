@@ -28,6 +28,7 @@ export default function FeatureCard({
 }) {
   const [improving, setImproving] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [transform, setTransform] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
   const viewStartRef = useRef<number | null>(null);
   const frustrationRef = useRef<{
@@ -42,19 +43,29 @@ export default function FeatureCard({
     ensureSession();
   }, []);
 
-  // Scroll into view + close on click outside / Escape
+  // Compute transform to fly tile to viewport center
   useEffect(() => {
-    if (!expanded) return;
-    // Scroll so the full expanded tile is visible
-    requestAnimationFrame(() => {
-      containerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
+    if (!expanded || !containerRef.current) {
+      setTransform("");
+      return;
+    }
+
+    const el = containerRef.current;
+    const rect = el.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    const scale = 1.3;
+    // Center of element vs center of viewport
+    const elCenterX = rect.left + rect.width / 2;
+    const elCenterY = rect.top + rect.height / 2;
+    const dx = vw / 2 - elCenterX;
+    const dy = vh / 2 - elCenterY;
+
+    setTransform(`translate(${dx}px, ${dy}px) scale(${scale})`);
 
     function handleClick(e: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
+      if (el && !el.contains(e.target as Node)) {
         setExpanded(false);
       }
     }
@@ -129,10 +140,8 @@ export default function FeatureCard({
   const handleInteraction = useCallback(
     (e: React.MouseEvent) => {
       const target = e.target as HTMLElement;
-      // Skip if clicking card-level controls (top bar buttons)
       if (target.closest("[data-card-control]")) return;
 
-      // Any interaction with content expands the tile
       if (!expanded) setExpanded(true);
 
       if (
@@ -166,104 +175,116 @@ export default function FeatureCard({
   );
 
   return (
-    <div
-      ref={containerRef}
-      onClick={handleInteraction}
-      className={`group relative rounded-2xl border bg-gray-900 shadow-lg transition-all duration-300 ${
-        expanded
-          ? "border-violet-500/60 shadow-violet-500/20 z-30 scale-[1.15] sm:scale-125"
-          : "border-gray-800 hover:border-gray-700 z-0"
-      }`}
-      style={{ contain: "layout style paint", isolation: "isolate" }}
-    >
-      {/* Left arrow — reorder */}
-      {!isFirst && (
-        <button
-          data-card-control
-          onClick={(e) => { e.stopPropagation(); onMoveLeft?.(); }}
-          className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 hover:bg-violet-600 border border-gray-700 hover:border-violet-500 rounded-full w-6 h-6 flex items-center justify-center cursor-pointer shadow-lg"
-          title="Move left"
-        >
-          <svg className="h-3 w-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
+    <>
+      {/* Backdrop when expanded */}
+      {expanded && (
+        <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity duration-300" />
       )}
 
-      {/* Right arrow — reorder */}
-      {!isLast && (
-        <button
-          data-card-control
-          onClick={(e) => { e.stopPropagation(); onMoveRight?.(); }}
-          className="absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 hover:bg-violet-600 border border-gray-700 hover:border-violet-500 rounded-full w-6 h-6 flex items-center justify-center cursor-pointer shadow-lg"
-          title="Move right"
-        >
-          <svg className="h-3 w-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
-      )}
-
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-3 pt-2.5 pb-1">
-        <h3 className="text-xs font-medium text-gray-500 font-mono truncate mr-2">
-          {name.replace(/([A-Z])/g, " $1").trim()}
-        </h3>
-        <div data-card-control className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-          <button
-            onClick={(e) => { e.stopPropagation(); handleImprove(); }}
-            disabled={improving}
-            className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-gray-800 hover:bg-violet-600/30 text-gray-500 hover:text-violet-300 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-wait"
-            title="Improve with AI"
-          >
-            {improving ? "..." : "✦"}
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-            className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-gray-800 hover:bg-gray-700 text-gray-500 hover:text-gray-300 cursor-pointer transition-colors"
-            title={expanded ? "Collapse" : "Expand"}
-          >
-            {expanded ? "↙" : "↗"}
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); onHide(); }}
-            className="text-gray-600 hover:text-gray-300 cursor-pointer p-0.5"
-            title="Hide this feature"
-          >
-            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      {/* Improving overlay */}
-      {improving && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-900/80 rounded-2xl">
-          <div className="flex items-center gap-2 text-violet-400 text-sm">
-            <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-            Improving...
-          </div>
-        </div>
-      )}
-
-      {/* Content — sandboxed */}
       <div
-        className={`px-3 pb-3 overflow-hidden transition-all duration-300 ${
-          expanded ? "h-[500px]" : "h-[280px]"
+        ref={containerRef}
+        onClick={handleInteraction}
+        className={`group relative rounded-2xl border bg-gray-900 shadow-lg transition-all duration-500 ease-out ${
+          expanded
+            ? "border-violet-500/60 shadow-2xl shadow-violet-500/20 z-50"
+            : "border-gray-800 hover:border-gray-700 z-0"
         }`}
-        style={{ contain: "layout paint", isolation: "isolate" }}
+        style={{
+          contain: expanded ? undefined : "layout style paint",
+          isolation: "isolate",
+          transform: transform || "translate(0, 0) scale(1)",
+          transformOrigin: "center center",
+        }}
       >
-        <div className="w-full h-full overflow-auto scrollbar-thin overscroll-contain">
-          <div className="w-full [&>*]:w-full [&>*]:max-w-full [&_canvas]:max-w-full [&_img]:max-w-full [&_svg]:max-w-full">
-            <FeatureErrorBoundary name={name} onCrash={onCrash}>
-              <Component />
-            </FeatureErrorBoundary>
+        {/* Left arrow — reorder */}
+        {!isFirst && !expanded && (
+          <button
+            data-card-control
+            onClick={(e) => { e.stopPropagation(); onMoveLeft?.(); }}
+            className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 hover:bg-violet-600 border border-gray-700 hover:border-violet-500 rounded-full w-6 h-6 flex items-center justify-center cursor-pointer shadow-lg"
+            title="Move left"
+          >
+            <svg className="h-3 w-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        )}
+
+        {/* Right arrow — reorder */}
+        {!isLast && !expanded && (
+          <button
+            data-card-control
+            onClick={(e) => { e.stopPropagation(); onMoveRight?.(); }}
+            className="absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 hover:bg-violet-600 border border-gray-700 hover:border-violet-500 rounded-full w-6 h-6 flex items-center justify-center cursor-pointer shadow-lg"
+            title="Move right"
+          >
+            <svg className="h-3 w-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        )}
+
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-3 pt-2.5 pb-1">
+          <h3 className="text-xs font-medium text-gray-500 font-mono truncate mr-2">
+            {name.replace(/([A-Z])/g, " $1").trim()}
+          </h3>
+          <div data-card-control className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            <button
+              onClick={(e) => { e.stopPropagation(); handleImprove(); }}
+              disabled={improving}
+              className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-gray-800 hover:bg-violet-600/30 text-gray-500 hover:text-violet-300 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-wait"
+              title="Improve with AI"
+            >
+              {improving ? "..." : "✦"}
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+              className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-gray-800 hover:bg-gray-700 text-gray-500 hover:text-gray-300 cursor-pointer transition-colors"
+              title={expanded ? "Collapse" : "Expand"}
+            >
+              {expanded ? "↙" : "↗"}
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onHide(); }}
+              className="text-gray-600 hover:text-gray-300 cursor-pointer p-0.5"
+              title="Hide this feature"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Improving overlay */}
+        {improving && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-900/80 rounded-2xl">
+            <div className="flex items-center gap-2 text-violet-400 text-sm">
+              <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              Improving...
+            </div>
+          </div>
+        )}
+
+        {/* Content — sandboxed */}
+        <div
+          className={`px-3 pb-3 overflow-hidden transition-all duration-500 ${
+            expanded ? "h-[500px]" : "h-[280px]"
+          }`}
+          style={{ contain: "layout paint", isolation: "isolate" }}
+        >
+          <div className="w-full h-full overflow-auto scrollbar-thin overscroll-contain">
+            <div className="w-full [&>*]:w-full [&>*]:max-w-full [&_canvas]:max-w-full [&_img]:max-w-full [&_svg]:max-w-full">
+              <FeatureErrorBoundary name={name} onCrash={onCrash}>
+                <Component />
+              </FeatureErrorBoundary>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
