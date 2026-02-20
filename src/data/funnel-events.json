@@ -82,5 +82,19 @@
     "sessionId": "rgiq6tqc",
     "type": "page_view",
     "timestamp": "2026-02-20T12:12:12.806Z"
+  },
+  {
+    "funnelId": "eddy-english-lessons",
+    "pageName": "EddyEnglishLanding",
+    "sessionId": "d6rnxj0h",
+    "type": "page_view",
+    "timestamp": "2026-02-20T12:39:49.168Z"
+  },
+  {
+    "funnelId": "eddy-english-lessons",
+    "pageName": "EddyEnglishLanding",
+    "sessionId": "d6rnxj0h",
+    "type": "page_view",
+    "timestamp": "2026-02-20T12:39:53.497Z"
   }
 ]
