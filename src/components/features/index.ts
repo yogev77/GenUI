@@ -11,3 +11,4 @@ export { default as AdaptiveGrid } from './AdaptiveGrid';
 export { default as MandelbrotExplorer } from './MandelbrotExplorer';
 export { default as GeometricShapeDrawer } from './GeometricShapeDrawer';
 export { default as FireworksSimulator } from './FireworksSimulator';
+export { default as SolarSystemSimulator } from './SolarSystemSimulator';
