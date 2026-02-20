@@ -19,7 +19,41 @@
     ],
     "createdAt": "2026-02-20T10:21:42.517Z",
     "kpis": {
-      "totalVisitors": 2,
+      "totalVisitors": 1,
+      "ctaClicks": 0,
+      "emailCaptures": 0,
+      "fakePurchases": 0,
+      "avgScrollDepth": 0,
+      "conversionRate": 0
+    }
+  },
+  {
+    "id": "eddy-english-learning",
+    "productInfo": {
+      "productName": "Eddy English Learning",
+      "productType": "service",
+      "description": "One-on-one English language learning lessons with personalized instruction from Eddy.",
+      "price": "25-50 per lesson",
+      "targetAudience": "English language learners seeking personalized instruction",
+      "uniqueSellingPoints": [
+        "Individual 1:1 lessons",
+        "Personalized learning experience",
+        "Dedicated instructor named Eddy",
+        "mutli lingual",
+        "specalized for younger audience",
+        "interactive tools",
+        "$1 per lesson vs $30 to a private tutor"
+      ],
+      "tone": "casual"
+    },
+    "pages": [
+      "EddyEnglishLanding",
+      "EddyEnglishDetails",
+      "EddyEnglishCheckout"
+    ],
+    "createdAt": "2026-02-20T10:55:19.851Z",
+    "kpis": {
+      "totalVisitors": 0,
       "ctaClicks": 0,
       "emailCaptures": 0,
       "fakePurchases": 0,
