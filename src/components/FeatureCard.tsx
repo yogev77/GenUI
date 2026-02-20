@@ -7,16 +7,11 @@ import FeatureErrorBoundary from "./FeatureErrorBoundary";
 type CardSize = "s" | "m" | "l";
 
 const SIZE_LABELS: Record<CardSize, string> = { s: "S", m: "M", l: "L" };
-const SIZE_COLS: Record<CardSize, string> = {
-  s: "col-span-1",
-  m: "sm:col-span-2",
-  l: "sm:col-span-2 lg:col-span-3",
-};
 
 const SIZE_HEIGHTS: Record<CardSize, string> = {
-  s: "min-h-[180px] max-h-[350px]",
-  m: "min-h-[220px] max-h-[450px]",
-  l: "min-h-[250px] max-h-[550px]",
+  s: "h-[240px]",
+  m: "h-[360px]",
+  l: "h-[480px]",
 };
 
 const SIZES_KEY = "genui-card-sizes";
@@ -182,12 +177,12 @@ export default function FeatureCard({
       ref={containerRef}
       onClick={handleInteraction}
       onMouseDown={handleMouseDown}
-      className={`group relative rounded-2xl border border-gray-800 bg-gray-900 shadow-lg hover:border-violet-500/50 transition-all ${SIZE_COLS[size]}`}
+      className="group relative rounded-2xl border border-gray-800 bg-gray-900 shadow-lg hover:border-violet-500/50 transition-all"
       style={{ contain: "layout style paint", isolation: "isolate" }}
     >
       {/* Top bar — outside sandbox */}
-      <div className="flex items-center justify-between px-4 pt-3 pb-1">
-        <h3 className="text-sm font-medium text-gray-400 font-mono truncate mr-2">
+      <div className="flex items-center justify-between px-3 pt-2.5 pb-1">
+        <h3 className="text-xs font-medium text-gray-500 font-mono truncate mr-2">
           {name.replace(/([A-Z])/g, " $1").trim()}
         </h3>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
@@ -228,10 +223,10 @@ export default function FeatureCard({
 
       {/* Content — sandboxed */}
       <div
-        className={`px-4 pb-4 overflow-hidden ${SIZE_HEIGHTS[size]}`}
+        className={`px-3 pb-3 overflow-hidden ${SIZE_HEIGHTS[size]}`}
         style={{ contain: "layout paint", isolation: "isolate" }}
       >
-        <div className="w-full h-full overflow-auto">
+        <div className="w-full h-full overflow-auto scrollbar-thin">
           <div className="w-full [&>*]:w-full [&>*]:max-w-full [&_canvas]:max-w-full [&_img]:max-w-full [&_svg]:max-w-full">
             <FeatureErrorBoundary name={name} onCrash={onCrash}>
               <Component />

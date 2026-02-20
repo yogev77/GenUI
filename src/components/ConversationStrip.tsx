@@ -253,7 +253,7 @@ export default function ConversationStrip({
         {expanded && hasMessages && (
           <div
             ref={scrollRef}
-            className="flex flex-col gap-1.5 px-3 py-2 overflow-y-auto max-h-[160px] scrollbar-thin animate-in fade-in duration-200"
+            className="flex flex-col gap-2 px-3 py-2 overflow-y-auto max-h-[200px] scrollbar-thin animate-in fade-in duration-200"
           >
             {messages.map((msg, i) => (
               <div
@@ -265,7 +265,7 @@ export default function ConversationStrip({
                 }`}
               >
                 <p
-                  className={`text-xs leading-relaxed ${
+                  className={`text-sm leading-relaxed ${
                     msg.role === "user" ? "text-violet-300" : "text-gray-400"
                   }`}
                 >
@@ -282,7 +282,7 @@ export default function ConversationStrip({
                         className="rounded-md border border-gray-700 hover:border-violet-500 bg-gray-900/80 hover:bg-violet-600/20 px-2 py-0.5 transition-all cursor-pointer disabled:opacity-50"
                         title={opt.description}
                       >
-                        <span className="text-[11px] font-medium text-gray-300 hover:text-violet-300">
+                        <span className="text-xs font-medium text-gray-300 hover:text-violet-300">
                           {opt.label}
                         </span>
                       </button>
@@ -304,7 +304,7 @@ export default function ConversationStrip({
                   style={{ animationDelay: "0.3s" }}
                 />
                 {generating && (
-                  <span className="ml-1 text-[10px] text-gray-500">
+                  <span className="ml-1 text-xs text-gray-500">
                     Building {generating}...
                   </span>
                 )}
