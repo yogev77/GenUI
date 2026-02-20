@@ -85,7 +85,7 @@
     ],
     "createdAt": "2026-02-20T15:18:36.186Z",
     "kpis": {
-      "totalVisitors": 0,
+      "totalVisitors": 1,
       "ctaClicks": 0,
       "emailCaptures": 0,
       "fakePurchases": 0,
