@@ -1,1 +1,34 @@
-[]
+[
+  {
+    "id": "eddy-english-lessons",
+    "productInfo": {
+      "productName": "Eddy English Lessons",
+      "productType": "service",
+      "description": "One-on-one English language learning lessons with personalized instruction from Eddy.",
+      "price": "25.00",
+      "targetAudience": "English language learners seeking personalized instruction",
+      "uniqueSellingPoints": [
+        "1:1 personalized lessons",
+        "Individual attention from dedicated instructor",
+        "Flexible online learning format"
+      ],
+      "tone": "professional"
+    },
+    "pages": [
+      "EddyEnglishLanding",
+      "EddyEnglishDetails",
+      "EddyEnglishCheckout"
+    ],
+    "createdAt": "2026-02-20T11:35:04.404Z",
+    "kpis": {
+      "totalVisitors": 0,
+      "ctaClicks": 0,
+      "emailCaptures": 0,
+      "fakePurchases": 0,
+      "avgScrollDepth": 0,
+      "conversionRate": 0
+    },
+    "logs": [],
+    "experiments": []
+  }
+]
