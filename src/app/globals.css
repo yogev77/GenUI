@@ -3,10 +3,11 @@
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --color-leaf-100: #CFF09E;
-  --color-leaf-200: #A8DBA8;
-  --color-leaf-400: #4D9C73;
-  --color-leaf-700: #245151;
-  --color-leaf-900: #0B486B;
-  --color-leaf-950: #083a58;
+  --font-marker: var(--font-marker);
+  --color-leaf-100: #e8f1fb;
+  --color-leaf-200: #414141;
+  --color-leaf-400: #338bd5;
+  --color-leaf-700: #2d1f93;
+  --color-leaf-900: #2e2e2e;
+  --color-leaf-950: #1b1b1b;
 }

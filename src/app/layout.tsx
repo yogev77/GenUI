@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Permanent_Marker } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,10 +12,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const marker = Permanent_Marker({
+  variable: "--font-marker",
+  weight: "400",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
-  title: "GenUI — Self-Evolving Website",
+  title: "Sell This Pen — AI Sales Funnels",
   description:
-    "A website that builds itself. Click generate and watch AI add new features in real-time.",
+    "AI-generated sales funnels that evolve from visitor data. Create, test, and optimize landing pages automatically.",
 };
 
 export default function RootLayout({
@@ -26,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-leaf-950 text-gray-100 min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} ${marker.variable} antialiased bg-white text-gray-900 min-h-screen`}
       >
         {children}
       </body>
