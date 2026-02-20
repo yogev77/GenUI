@@ -41,8 +41,14 @@
       "feature": "GeometricShapeDrawer",
       "reasoning": "The user specifically requested a tool for creating drawings by placing and connecting geometric shapes with different colors. Given the high engagement with visual/creative tools like ColorHarmony and PixelArt, this drawing tool will provide an interactive canvas for geometric art creation that aligns perfectly with user preferences for visual creativity and mathematical elements.",
       "linesOfCode": 267
+    },
+    {
+      "timestamp": "2026-02-20T02:06:39.649Z",
+      "feature": "FireworksSimulator",
+      "reasoning": "This directly fulfills the user's specific request for an interactive fireworks simulator. Given the high engagement with visual/creative tools like ColorHarmony and PixelArt, this particle-based animation will tap into those same preferences while adding satisfying interactivity.",
+      "linesOfCode": 213
     }
   ],
-  "totalFeatures": 7,
-  "totalLinesOfCode": 1350
+  "totalFeatures": 8,
+  "totalLinesOfCode": 1563
 }
