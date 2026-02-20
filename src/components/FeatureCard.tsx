@@ -8,10 +8,10 @@ type CardSize = "s" | "m" | "l";
 
 const SIZE_LABELS: Record<CardSize, string> = { s: "S", m: "M", l: "L" };
 
-const SIZE_HEIGHTS: Record<CardSize, string> = {
-  s: "h-[240px]",
-  m: "h-[360px]",
-  l: "h-[480px]",
+const SIZE_COLS: Record<CardSize, string> = {
+  s: "",
+  m: "sm:col-span-2",
+  l: "sm:col-span-2 lg:col-span-3",
 };
 
 const SIZES_KEY = "genui-card-sizes";
@@ -167,7 +167,7 @@ export default function FeatureCard({
       onDragEnd={(e) => {
         e.preventDefault();
       }}
-      className={`group relative rounded-2xl border bg-gray-900 shadow-lg transition-all cursor-grab active:cursor-grabbing ${
+      className={`group relative rounded-2xl border bg-gray-900 shadow-lg transition-all cursor-grab active:cursor-grabbing ${SIZE_COLS[size]} ${
         isDragTarget
           ? "border-violet-500 scale-[1.02] shadow-violet-500/20"
           : "border-gray-800 hover:border-violet-500/50"
@@ -224,7 +224,7 @@ export default function FeatureCard({
 
       {/* Content — sandboxed */}
       <div
-        className={`px-3 pb-3 overflow-hidden ${SIZE_HEIGHTS[size]}`}
+        className="px-3 pb-3 overflow-hidden h-[280px]"
         style={{ contain: "layout paint", isolation: "isolate" }}
       >
         <div className="w-full h-full overflow-auto scrollbar-thin">
