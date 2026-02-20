@@ -37,12 +37,20 @@ export default function FeatureCard({
   onHide,
   onFrustration,
   onCrash,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  isDragTarget,
 }: {
   name: string;
   Component: React.ComponentType;
   onHide: () => void;
   onFrustration: () => void;
   onCrash: (name: string) => void;
+  onDragStart?: () => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: () => void;
+  isDragTarget?: boolean;
 }) {
   const [size, setSize] = useState<CardSize>("s");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -137,54 +145,47 @@ export default function FeatureCard({
     [name, onFrustration]
   );
 
-  // Detect drag attempts on non-interactive areas
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (
-        target.closest("button") ||
-        target.closest("canvas") ||
-        target.closest("input") ||
-        target.closest("[draggable]")
-      ) {
-        return;
-      }
-
-      let moved = false;
-      const onMove = () => {
-        moved = true;
-      };
-      const onUp = () => {
-        window.removeEventListener("mousemove", onMove);
-        window.removeEventListener("mouseup", onUp);
-        if (moved) {
-          const f = frustrationRef.current;
-          f.clicks += 2;
-          if (f.clicks >= 3) {
-            f.clicks = 0;
-            onFrustration();
-          }
-        }
-      };
-      window.addEventListener("mousemove", onMove);
-      window.addEventListener("mouseup", onUp);
-    },
-    [onFrustration]
-  );
-
   return (
     <div
       ref={containerRef}
+      draggable
       onClick={handleInteraction}
-      onMouseDown={handleMouseDown}
-      className="group relative rounded-2xl border border-gray-800 bg-gray-900 shadow-lg hover:border-violet-500/50 transition-all"
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", name);
+        onDragStart?.();
+      }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        onDragOver?.(e);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        onDrop?.();
+      }}
+      onDragEnd={(e) => {
+        e.preventDefault();
+      }}
+      className={`group relative rounded-2xl border bg-gray-900 shadow-lg transition-all cursor-grab active:cursor-grabbing ${
+        isDragTarget
+          ? "border-violet-500 scale-[1.02] shadow-violet-500/20"
+          : "border-gray-800 hover:border-violet-500/50"
+      }`}
       style={{ contain: "layout style paint", isolation: "isolate" }}
     >
       {/* Top bar — outside sandbox */}
       <div className="flex items-center justify-between px-3 pt-2.5 pb-1">
-        <h3 className="text-xs font-medium text-gray-500 font-mono truncate mr-2">
-          {name.replace(/([A-Z])/g, " $1").trim()}
-        </h3>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <svg className="h-3 w-3 text-gray-700 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" viewBox="0 0 16 16" fill="currentColor">
+            <circle cx="5" cy="4" r="1.5"/><circle cx="11" cy="4" r="1.5"/>
+            <circle cx="5" cy="8" r="1.5"/><circle cx="11" cy="8" r="1.5"/>
+            <circle cx="5" cy="12" r="1.5"/><circle cx="11" cy="12" r="1.5"/>
+          </svg>
+          <h3 className="text-xs font-medium text-gray-500 font-mono truncate">
+            {name.replace(/([A-Z])/g, " $1").trim()}
+          </h3>
+        </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
           <button
             onClick={(e) => {

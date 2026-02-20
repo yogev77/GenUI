@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import GenerateButton from "@/components/GenerateButton";
 import EvolutionLog from "@/components/EvolutionLog";
 import FeatureCard from "@/components/FeatureCard";
@@ -13,6 +13,7 @@ import historyData from "@/data/history.json";
 
 const HIDDEN_KEY = "genui-hidden-features";
 const CRASHED_KEY = "genui-crashed-features";
+const ORDER_KEY = "genui-feature-order";
 
 function getHidden(): string[] {
   if (typeof window === "undefined") return [];
@@ -32,15 +33,49 @@ function getCrashed(): string[] {
   }
 }
 
+function getSavedOrder(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(localStorage.getItem(ORDER_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function applyOrder(
+  entries: [string, React.ComponentType][],
+  order: string[]
+): [string, React.ComponentType][] {
+  if (!order.length) return entries;
+  const map = new Map(entries);
+  const ordered: [string, React.ComponentType][] = [];
+  for (const name of order) {
+    const comp = map.get(name);
+    if (comp) {
+      ordered.push([name, comp]);
+      map.delete(name);
+    }
+  }
+  // Append any new features not in saved order
+  for (const [name, comp] of map) {
+    ordered.push([name, comp]);
+  }
+  return ordered;
+}
+
 export default function Home() {
   const [hidden, setHidden] = useState<string[]>([]);
   const [crashed, setCrashed] = useState<string[]>([]);
+  const [order, setOrder] = useState<string[]>([]);
   const [prefs, setPrefs] = useState<ReturnType<typeof getPreferences> | null>(null);
   const [frustrationCount, setFrustrationCount] = useState(0);
+  const [dragOver, setDragOver] = useState<string | null>(null);
+  const dragSource = useRef<string | null>(null);
 
   useEffect(() => {
     setHidden(getHidden());
     setCrashed(getCrashed());
+    setOrder(getSavedOrder());
     setPrefs(getPreferences());
   }, []);
 
@@ -53,9 +88,10 @@ export default function Home() {
     string,
     React.ComponentType,
   ][];
-  const visibleEntries = allEntries.filter(
+  const filteredEntries = allEntries.filter(
     ([name]) => !hidden.includes(name) && !crashed.includes(name)
   );
+  const visibleEntries = applyOrder(filteredEntries, order);
   const hiddenCount = allEntries.length - visibleEntries.length - crashed.length;
   const crashedCount = crashed.length;
 
@@ -85,6 +121,23 @@ export default function Home() {
     setCrashed([]);
     localStorage.removeItem(CRASHED_KEY);
   }
+
+  const handleReorder = useCallback((from: string, to: string) => {
+    if (from === to) return;
+    setOrder((prev) => {
+      const names = prev.length
+        ? [...prev]
+        : visibleEntries.map(([n]) => n);
+      const fi = names.indexOf(from);
+      const ti = names.indexOf(to);
+      if (fi === -1 || ti === -1) return prev;
+      names.splice(fi, 1);
+      names.splice(ti, 0, from);
+      localStorage.setItem(ORDER_KEY, JSON.stringify(names));
+      return names;
+    });
+    setDragOver(null);
+  }, [visibleEntries]);
 
   return (
     <CodeGate>
@@ -145,6 +198,12 @@ export default function Home() {
           <div
             className="grid gap-4"
             style={{ gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 320px), 1fr))" }}
+            onDragLeave={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                setDragOver(null);
+              }
+            }}
+            onDragEnd={() => { dragSource.current = null; setDragOver(null); }}
           >
             {visibleEntries.map(([name, Component]) => (
               <FeatureCard
@@ -154,6 +213,13 @@ export default function Home() {
                 onHide={() => hideFeature(name)}
                 onFrustration={handleFrustration}
                 onCrash={handleCrash}
+                onDragStart={() => { dragSource.current = name; }}
+                onDragOver={() => setDragOver(name)}
+                onDrop={() => {
+                  if (dragSource.current) handleReorder(dragSource.current, name);
+                  dragSource.current = null;
+                }}
+                isDragTarget={dragOver === name && dragSource.current !== name}
               />
             ))}
           </div>
