@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { recordInteraction, recordViewTime, ensureSession } from "@/lib/usage";
+import FeatureErrorBoundary from "./FeatureErrorBoundary";
 
 type CardSize = "s" | "m" | "l";
 
@@ -10,6 +11,12 @@ const SIZE_COLS: Record<CardSize, string> = {
   s: "col-span-1",
   m: "sm:col-span-2",
   l: "sm:col-span-2 lg:col-span-3",
+};
+
+const SIZE_HEIGHTS: Record<CardSize, string> = {
+  s: "min-h-[180px] max-h-[350px]",
+  m: "min-h-[220px] max-h-[450px]",
+  l: "min-h-[250px] max-h-[550px]",
 };
 
 const SIZES_KEY = "genui-card-sizes";
@@ -34,11 +41,13 @@ export default function FeatureCard({
   Component,
   onHide,
   onFrustration,
+  onCrash,
 }: {
   name: string;
   Component: React.ComponentType;
   onHide: () => void;
   onFrustration: () => void;
+  onCrash: (name: string) => void;
 }) {
   const [size, setSize] = useState<CardSize>("s");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -174,8 +183,9 @@ export default function FeatureCard({
       onClick={handleInteraction}
       onMouseDown={handleMouseDown}
       className={`group relative rounded-2xl border border-gray-800 bg-gray-900 shadow-lg hover:border-violet-500/50 transition-all ${SIZE_COLS[size]}`}
+      style={{ contain: "layout style paint", isolation: "isolate" }}
     >
-      {/* Top bar */}
+      {/* Top bar — outside sandbox */}
       <div className="flex items-center justify-between px-4 pt-3 pb-1">
         <h3 className="text-sm font-medium text-gray-400 font-mono truncate mr-2">
           {name.replace(/([A-Z])/g, " $1").trim()}
@@ -216,10 +226,17 @@ export default function FeatureCard({
         </div>
       </div>
 
-      {/* Content */}
-      <div className="px-4 pb-4 overflow-auto min-h-[200px] max-h-[500px] flex items-center justify-center">
-        <div className="w-full">
-          <Component />
+      {/* Content — sandboxed */}
+      <div
+        className={`px-4 pb-4 overflow-hidden ${SIZE_HEIGHTS[size]}`}
+        style={{ contain: "layout paint", isolation: "isolate" }}
+      >
+        <div className="w-full h-full overflow-auto">
+          <div className="w-full [&>*]:w-full [&>*]:max-w-full [&_canvas]:max-w-full [&_img]:max-w-full [&_svg]:max-w-full">
+            <FeatureErrorBoundary name={name} onCrash={onCrash}>
+              <Component />
+            </FeatureErrorBoundary>
+          </div>
         </div>
       </div>
     </div>

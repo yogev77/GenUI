@@ -5,17 +5,14 @@ import GenerateButton from "@/components/GenerateButton";
 import EvolutionLog from "@/components/EvolutionLog";
 import FeatureCard from "@/components/FeatureCard";
 import ConversationStrip from "@/components/ConversationStrip";
-import SiteChat from "@/components/SiteChat";
+import CodeGate from "@/components/CodeGate";
 import * as Features from "@/components/features";
 import type { SiteHistory } from "@/lib/history";
-import {
-  getPreferences,
-  FONT_SIZE_CLASSES,
-  type SitePreferences,
-} from "@/lib/preferences";
+import { getPreferences, FONT_SIZE_CLASSES } from "@/lib/preferences";
 import historyData from "@/data/history.json";
 
 const HIDDEN_KEY = "genui-hidden-features";
+const CRASHED_KEY = "genui-crashed-features";
 
 function getHidden(): string[] {
   if (typeof window === "undefined") return [];
@@ -26,22 +23,29 @@ function getHidden(): string[] {
   }
 }
 
+function getCrashed(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(localStorage.getItem(CRASHED_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
 export default function Home() {
   const [hidden, setHidden] = useState<string[]>([]);
-  const [prefs, setPrefs] = useState<SitePreferences | null>(null);
-  const [chatTrigger, setChatTrigger] = useState(0);
+  const [crashed, setCrashed] = useState<string[]>([]);
+  const [prefs, setPrefs] = useState<ReturnType<typeof getPreferences> | null>(null);
+  const [frustrationCount, setFrustrationCount] = useState(0);
 
   useEffect(() => {
     setHidden(getHidden());
+    setCrashed(getCrashed());
     setPrefs(getPreferences());
   }, []);
 
-  const handlePrefsChange = useCallback((newPrefs: SitePreferences) => {
-    setPrefs(newPrefs);
-  }, []);
-
   const handleFrustration = useCallback(() => {
-    setChatTrigger((n) => n + 1);
+    setFrustrationCount((n) => n + 1);
   }, []);
 
   const history = historyData as SiteHistory;
@@ -49,8 +53,11 @@ export default function Home() {
     string,
     React.ComponentType,
   ][];
-  const visibleEntries = allEntries.filter(([name]) => !hidden.includes(name));
-  const hiddenCount = allEntries.length - visibleEntries.length;
+  const visibleEntries = allEntries.filter(
+    ([name]) => !hidden.includes(name) && !crashed.includes(name)
+  );
+  const hiddenCount = allEntries.length - visibleEntries.length - crashed.length;
+  const crashedCount = crashed.length;
 
   const fontClass = prefs ? FONT_SIZE_CLASSES[prefs.fontSize] : "text-base";
 
@@ -65,43 +72,70 @@ export default function Home() {
     localStorage.removeItem(HIDDEN_KEY);
   }
 
+  const handleCrash = useCallback((name: string) => {
+    setCrashed((prev) => {
+      if (prev.includes(name)) return prev;
+      const next = [...prev, name];
+      localStorage.setItem(CRASHED_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  function retryCrashed() {
+    setCrashed([]);
+    localStorage.removeItem(CRASHED_KEY);
+  }
+
   return (
-    <main className={`min-h-screen px-4 py-12 sm:px-6 lg:px-8 ${fontClass}`}>
+    <CodeGate>
+    <main className={`min-h-screen px-4 pt-8 pb-12 sm:px-6 lg:px-8 ${fontClass}`}>
       {/* Header */}
-      <div className="mx-auto max-w-3xl text-center mb-12">
-        <h1 className="text-6xl font-bold tracking-tight bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent">
+      <div className="mx-auto max-w-3xl text-center mb-6">
+        <h1 className="text-4xl sm:text-5xl font-bold tracking-tight bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent">
           GenUI
         </h1>
-        <p className="mt-3 text-lg text-gray-400">
-          A self-evolving website — each click adds a new AI-generated feature
+        <p className="mt-2 text-sm text-gray-500">
+          A self-evolving website
         </p>
-        <p className="mt-2 text-sm text-gray-500 font-mono">
-          {allEntries.length === 0
-            ? "No features yet — click below to start!"
-            : `${allEntries.length} feature${allEntries.length === 1 ? "" : "s"} generated · ${history.totalLinesOfCode} lines of code`}
-        </p>
+        {allEntries.length > 0 && (
+          <div className="mt-2 flex items-center justify-center gap-3 text-xs text-gray-600">
+            <span>{allEntries.length} features</span>
+            <span className="text-gray-700">·</span>
+            <span>{history.totalLinesOfCode} lines</span>
+          </div>
+        )}
       </div>
 
       {/* Generate Button */}
-      <div className="flex justify-center mb-8">
+      <div className="flex justify-center mb-6">
         <GenerateButton />
       </div>
 
       {/* Conversation Strip */}
-      <ConversationStrip />
+      <ConversationStrip frustrationHint={frustrationCount} />
 
       {/* Evolution Log */}
       <EvolutionLog history={history} />
 
-      {/* Hidden count + restore */}
-      {hiddenCount > 0 && (
-        <div className="mx-auto max-w-6xl mb-4 flex justify-end">
-          <button
-            onClick={showAll}
-            className="text-xs text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
-          >
-            {hiddenCount} hidden — show all
-          </button>
+      {/* Hidden / crashed counts + restore */}
+      {(hiddenCount > 0 || crashedCount > 0) && (
+        <div className="mx-auto max-w-6xl mb-4 flex justify-end gap-4">
+          {crashedCount > 0 && (
+            <button
+              onClick={retryCrashed}
+              className="text-xs text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+            >
+              {crashedCount} crashed — retry
+            </button>
+          )}
+          {hiddenCount > 0 && (
+            <button
+              onClick={showAll}
+              className="text-xs text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
+            >
+              {hiddenCount} hidden — show all
+            </button>
+          )}
         </div>
       )}
 
@@ -116,6 +150,7 @@ export default function Home() {
                 Component={Component}
                 onHide={() => hideFeature(name)}
                 onFrustration={handleFrustration}
+                onCrash={handleCrash}
               />
             ))}
           </div>
@@ -127,8 +162,7 @@ export default function Home() {
         Built with Next.js + Claude API + GitHub API + Vercel
       </footer>
 
-      {/* Feedback Chat */}
-      <SiteChat onPrefsChange={handlePrefsChange} triggerOpen={chatTrigger} />
     </main>
+    </CodeGate>
   );
 }

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import * as Features from "@/components/features";
 import { getPreferences } from "@/lib/preferences";
 import { getUsage } from "@/lib/usage";
+import { getCode } from "@/lib/auth";
 
 interface ChatMessage {
   role: "user" | "site";
@@ -18,19 +19,90 @@ interface OptionItem {
   idea: string;
 }
 
-export default function ConversationStrip() {
+export default function ConversationStrip({
+  frustrationHint,
+}: {
+  frustrationHint?: number;
+}) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const lastHintRef = useRef(0);
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, loading]);
+
+  // Auto-expand when there are new messages or loading
+  useEffect(() => {
+    if (messages.length > 0 || loading || generating) {
+      setExpanded(true);
+    }
+  }, [messages, loading, generating]);
+
+  // Collapse on click outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
+        if (!loading && !generating) {
+          setExpanded(false);
+        }
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [loading, generating]);
+
+  // When frustration is detected, proactively inject a site message
+  useEffect(() => {
+    if (!frustrationHint || frustrationHint === lastHintRef.current) return;
+    lastHintRef.current = frustrationHint;
+
+    const hints = [
+      "I noticed you might be looking for something. Can I help?",
+      "Seems like something isn't working as expected. What are you trying to do?",
+      "Having trouble? Tell me what you need and I can build it.",
+    ];
+    const hint = hints[frustrationHint % hints.length];
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "site",
+        text: hint,
+        options: [
+          {
+            label: "Something is broken",
+            description: "A feature isn't working right",
+            action: "clarify" as const,
+            idea: "Which feature is giving you trouble? Describe what you expected vs what happened.",
+          },
+          {
+            label: "I want something new",
+            description: "Build me a new feature",
+            action: "clarify" as const,
+            idea: "What kind of feature would be useful to you? Describe your idea.",
+          },
+          {
+            label: "I'm fine, thanks",
+            description: "Dismiss this suggestion",
+            action: "clarify" as const,
+            idea: "No problem! I'm here if you need anything.",
+          },
+        ],
+      },
+    ]);
+  }, [frustrationHint]);
 
   const existingFeatures = Object.keys(Features);
 
@@ -46,7 +118,10 @@ export default function ConversationStrip() {
     try {
       const res = await fetch("/api/understand", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-access-code": getCode(),
+        },
         body: JSON.stringify({
           message: text.trim(),
           existingFeatures,
@@ -76,110 +151,139 @@ export default function ConversationStrip() {
     }
   }
 
-  async function handleOption(option: OptionItem) {
-    if (option.action === "clarify") {
-      // Site asks a follow-up — show it as a site message then let user respond
-      setMessages((prev) => [
-        ...prev,
-        { role: "user", text: option.label },
-        { role: "site", text: option.idea },
-      ]);
-      inputRef.current?.focus();
-      return;
-    }
+  const handleOption = useCallback(
+    async (option: OptionItem) => {
+      if (option.action === "clarify") {
+        setMessages((prev) => [
+          ...prev,
+          { role: "user", text: option.label },
+          { role: "site", text: option.idea },
+        ]);
+        inputRef.current?.focus();
+        return;
+      }
 
-    // action === "generate" — build it
-    setGenerating(option.label);
-    const userMsg: ChatMessage = {
-      role: "user",
-      text: option.label,
-    };
-    setMessages((prev) => [...prev, userMsg]);
+      setGenerating(option.label);
+      setMessages((prev) => [...prev, { role: "user", text: option.label }]);
 
-    try {
-      const prefs = getPreferences();
-      const usage = getUsage();
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          preferences: prefs,
-          usage,
-          requestedIdea: option.idea,
-        }),
-      });
+      try {
+        const prefs = getPreferences();
+        const usage = getUsage();
+        const res = await fetch("/api/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-access-code": getCode(),
+          },
+          body: JSON.stringify({
+            preferences: prefs,
+            usage,
+            requestedIdea: option.idea,
+          }),
+        });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "site",
-          text: `Built ${data.feature.replace(/([A-Z])/g, " $1").trim()}! ${data.reasoning}`,
-        },
-      ]);
-    } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "site",
-          text: `Couldn't build that — ${err instanceof Error ? err.message : "try again?"}`,
-        },
-      ]);
-    } finally {
-      setGenerating(null);
-    }
-  }
+        if (data.deploying) {
+          // Production — need Vercel redeploy
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "site",
+              text: `Built ${data.feature.replace(/([A-Z])/g, " $1").trim()}! Deploying now — page will refresh shortly.`,
+            },
+          ]);
+          setGenerating(null);
+          await new Promise((r) => setTimeout(r, 50000));
+          window.location.reload();
+          return;
+        }
+
+        // Dev — HMR handles it
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "site",
+            text: `Built ${data.feature.replace(/([A-Z])/g, " $1").trim()}! ${data.reasoning}`,
+          },
+        ]);
+      } catch (err) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "site",
+            text: `Couldn't build that — ${err instanceof Error ? err.message : "try again?"}`,
+          },
+        ]);
+      } finally {
+        setGenerating(null);
+      }
+    },
+    [existingFeatures]
+  );
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage(input);
     }
+    if (e.key === "Escape") {
+      setExpanded(false);
+      inputRef.current?.blur();
+    }
   }
 
+  const isActive = loading || !!generating;
+  const hasMessages = messages.length > 0;
+
   return (
-    <div className="mx-auto max-w-6xl mb-8">
-      {/* Strip container */}
-      <div className="rounded-2xl border border-gray-800 bg-gray-900/80 overflow-hidden">
-        {/* Messages area — horizontal scroll, compact height */}
-        {messages.length > 0 && (
+    <div
+      ref={containerRef}
+      className="sticky top-4 z-30 mx-auto max-w-xl mb-8 transition-all duration-300"
+    >
+      <div
+        className={`rounded-2xl border bg-gray-900/95 backdrop-blur-md shadow-lg overflow-hidden transition-all duration-300 ${
+          expanded
+            ? "border-violet-500/40 shadow-violet-500/10"
+            : "border-gray-800 hover:border-gray-700"
+        }`}
+      >
+        {/* Messages — only visible when expanded */}
+        {expanded && hasMessages && (
           <div
             ref={scrollRef}
-            className="flex gap-3 px-4 py-3 overflow-x-auto overflow-y-hidden scrollbar-thin"
-            style={{ maxHeight: "220px" }}
+            className="flex flex-col gap-1.5 px-3 py-2 overflow-y-auto max-h-[160px] scrollbar-thin animate-in fade-in duration-200"
           >
             {messages.map((msg, i) => (
               <div
                 key={i}
-                className={`shrink-0 max-w-[280px] rounded-xl px-3 py-2 ${
+                className={`rounded-lg px-2.5 py-1.5 ${
                   msg.role === "user"
-                    ? "bg-violet-600/20 border border-violet-700/50"
-                    : "bg-gray-800 border border-gray-700"
+                    ? "bg-violet-600/15 self-end max-w-[80%]"
+                    : "bg-gray-800/50 self-start max-w-[90%]"
                 }`}
               >
                 <p
-                  className={`text-sm ${msg.role === "user" ? "text-violet-300" : "text-gray-300"}`}
+                  className={`text-xs leading-relaxed ${
+                    msg.role === "user" ? "text-violet-300" : "text-gray-400"
+                  }`}
                 >
                   {msg.text}
                 </p>
 
-                {/* Options */}
                 {msg.options && (
-                  <div className="mt-2 flex flex-col gap-1.5">
+                  <div className="mt-1.5 flex flex-wrap gap-1">
                     {msg.options.map((opt, j) => (
                       <button
                         key={j}
                         onClick={() => handleOption(opt)}
-                        disabled={!!generating}
-                        className="text-left rounded-lg border border-gray-600 hover:border-violet-500/50 bg-gray-900 hover:bg-gray-800 px-2.5 py-1.5 transition-all cursor-pointer disabled:opacity-50 group"
+                        disabled={isActive}
+                        className="rounded-md border border-gray-700 hover:border-violet-500 bg-gray-900/80 hover:bg-violet-600/20 px-2 py-0.5 transition-all cursor-pointer disabled:opacity-50"
+                        title={opt.description}
                       >
-                        <span className="text-xs font-medium text-gray-200 group-hover:text-violet-300 block">
+                        <span className="text-[11px] font-medium text-gray-300 hover:text-violet-300">
                           {opt.label}
-                        </span>
-                        <span className="text-[10px] text-gray-500 block mt-0.5">
-                          {opt.description}
                         </span>
                       </button>
                     ))}
@@ -188,22 +292,19 @@ export default function ConversationStrip() {
               </div>
             ))}
 
-            {/* Loading indicator */}
-            {(loading || generating) && (
-              <div className="shrink-0 flex items-center px-3">
-                <div className="flex gap-1">
-                  <span className="h-2 w-2 rounded-full bg-violet-500 animate-bounce" />
-                  <span
-                    className="h-2 w-2 rounded-full bg-violet-500 animate-bounce"
-                    style={{ animationDelay: "0.15s" }}
-                  />
-                  <span
-                    className="h-2 w-2 rounded-full bg-violet-500 animate-bounce"
-                    style={{ animationDelay: "0.3s" }}
-                  />
-                </div>
+            {isActive && (
+              <div className="flex items-center gap-1.5 px-1 py-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce" />
+                <span
+                  className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce"
+                  style={{ animationDelay: "0.15s" }}
+                />
+                <span
+                  className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce"
+                  style={{ animationDelay: "0.3s" }}
+                />
                 {generating && (
-                  <span className="ml-2 text-xs text-gray-500">
+                  <span className="ml-1 text-[10px] text-gray-500">
                     Building {generating}...
                   </span>
                 )}
@@ -212,27 +313,57 @@ export default function ConversationStrip() {
           </div>
         )}
 
-        {/* Input area */}
+        {/* Input bar — always visible */}
         <div
-          className={`flex items-center gap-3 px-4 py-3 ${messages.length > 0 ? "border-t border-gray-800" : ""}`}
+          className={`flex items-center gap-2 px-3 py-2.5 ${
+            expanded && hasMessages ? "border-t border-gray-800/50" : ""
+          }`}
         >
+          <svg
+            className="h-4 w-4 text-gray-500 shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+            />
+          </svg>
           <input
             ref={inputRef}
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onFocus={() => setExpanded(true)}
             onKeyDown={handleKeyDown}
             placeholder="Tell the site what you need..."
-            disabled={loading || !!generating}
+            disabled={isActive}
             className="flex-1 bg-transparent text-sm text-gray-200 placeholder-gray-600 outline-none disabled:opacity-50"
           />
-          <button
-            onClick={() => sendMessage(input)}
-            disabled={!input.trim() || loading || !!generating}
-            className="shrink-0 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-medium disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
-          >
-            Send
-          </button>
+          {input.trim() && (
+            <button
+              onClick={() => sendMessage(input)}
+              disabled={isActive}
+              className="shrink-0 text-violet-400 hover:text-violet-300 disabled:opacity-30 cursor-pointer transition-colors"
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"
+                />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
     </div>

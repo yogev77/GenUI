@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { getPreferences } from "@/lib/preferences";
 import { getUsage } from "@/lib/usage";
+import { getCode } from "@/lib/auth";
 
 type Status = "idle" | "generating" | "deploying" | "done" | "error";
 
@@ -30,7 +31,10 @@ export default function GenerateButton() {
       const usage = getUsage();
       const res = await fetch("/api/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-access-code": getCode(),
+        },
         body: JSON.stringify({ preferences: prefs, usage }),
       });
       const data = await res.json();
@@ -65,28 +69,28 @@ export default function GenerateButton() {
   const isWorking = status === "generating" || status === "deploying";
 
   return (
-    <div className="flex flex-col items-center gap-4 max-w-md mx-auto">
+    <div className="flex flex-col items-center gap-2 max-w-sm mx-auto">
       <button
         onClick={handleClick}
         disabled={isWorking}
         className={`
-          group relative inline-flex items-center gap-3
-          rounded-2xl px-8 py-4 text-lg font-semibold
+          group relative inline-flex items-center gap-2
+          rounded-xl px-5 py-2.5 text-sm font-medium
           transition-all duration-300
           ${
             isWorking
-              ? "bg-violet-400 cursor-wait text-white"
+              ? "bg-violet-500/80 cursor-wait text-white"
               : status === "error"
-                ? "bg-red-500 hover:bg-red-600 text-white cursor-pointer"
+                ? "bg-red-500/80 hover:bg-red-500 text-white cursor-pointer"
                 : status === "done"
-                  ? "bg-green-500 text-white cursor-default"
-                  : "bg-violet-600 hover:bg-violet-700 hover:scale-105 active:scale-95 text-white cursor-pointer"
+                  ? "bg-green-500/80 text-white cursor-default"
+                  : "bg-violet-600 hover:bg-violet-500 hover:scale-105 active:scale-95 text-white cursor-pointer"
           }
-          shadow-lg hover:shadow-xl
+          shadow-md hover:shadow-lg
         `}
       >
         <svg
-          className={`h-6 w-6 ${isWorking ? "animate-spin" : "group-hover:rotate-12 transition-transform"}`}
+          className={`h-4 w-4 ${isWorking ? "animate-spin" : "group-hover:rotate-12 transition-transform"}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -120,40 +124,24 @@ export default function GenerateButton() {
               ? "Added!"
               : status === "error"
                 ? "Try Again"
-                : "Generate Feature"}
+                : "Generate"}
       </button>
 
-      {status === "generating" && (
-        <p className="text-sm text-gray-400 animate-pulse text-center">
-          AI is deciding what to build next...
+      {(status === "deploying" || status === "done") && result && (
+        <p className="text-xs text-center text-gray-500 max-w-xs">
+          <span className={status === "done" ? "text-green-400" : "text-violet-400"}>
+            {result.feature.replace(/([A-Z])/g, " $1").trim()}
+          </span>
+          {" — "}
+          {status === "deploying" ? (
+            <span className="animate-pulse">deploying, page will refresh...</span>
+          ) : (
+            <span className="text-gray-600">+{result.linesOfCode} lines</span>
+          )}
         </p>
       )}
 
-      {status === "deploying" && result && (
-        <div className="text-center rounded-xl border border-violet-800/50 bg-violet-950/30 px-4 py-3">
-          <p className="text-sm font-medium text-violet-400">
-            {result.feature.replace(/([A-Z])/g, " $1").trim()}
-          </p>
-          <p className="text-xs text-gray-400 mt-1">{result.reasoning}</p>
-          <p className="text-xs text-gray-500 mt-2 animate-pulse">
-            Deploying — page will refresh in ~45s
-          </p>
-        </div>
-      )}
-
-      {status === "done" && result && (
-        <div className="text-center rounded-xl border border-green-800/50 bg-green-950/30 px-4 py-3">
-          <p className="text-sm font-medium text-green-400">
-            {result.feature.replace(/([A-Z])/g, " $1").trim()}
-          </p>
-          <p className="text-xs text-gray-400 mt-1">{result.reasoning}</p>
-          <p className="text-[10px] font-mono text-gray-600 mt-1">
-            +{result.linesOfCode} lines of code
-          </p>
-        </div>
-      )}
-
-      {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+      {error && <p className="text-xs text-red-500 text-center">{error}</p>}
     </div>
   );
 }

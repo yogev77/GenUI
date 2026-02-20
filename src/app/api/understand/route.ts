@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { verifyCode } from "@/lib/auth";
 
 const client = new Anthropic();
 
 export async function POST(request: Request) {
+  // Verify access code
+  const accessCode = request.headers.get("x-access-code") || "";
+  if (!verifyCode(accessCode)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
+
   try {
     const { message, existingFeatures, conversationHistory } =
       await request.json();
@@ -47,12 +54,19 @@ The user says: "${message}"
 
 Rules:
 - NEVER just agree or execute — always respond with structured options
-- Each option should be a concrete, actionable proposal (a specific widget/feature idea, a UI change, or a clarifying question)
+- Each option should be a concrete, actionable proposal (a specific widget/feature idea or a clarifying question)
 - Options should be diverse — offer different interpretations or approaches
 - Keep your intro message brief (1 sentence max) — the options are what matters
 - If the user is vague, options should help narrow down what they want
 - If the user is specific, options should be variations on their idea
 - One option can always be "Something else entirely" to let them redirect
+
+SAFETY — NEVER suggest options that would:
+- Modify the site's core UI, chat area, generate button, layout, or navigation
+- Create admin panels, settings editors, or site management tools
+- Build features that control, override, or interact with other features on the site
+- Access browser storage, make network requests, or navigate the page
+- If the user asks for any of these, politely redirect toward a self-contained widget/toy/tool instead
 
 Respond with ONLY a JSON object (no markdown, no code fences):
 {

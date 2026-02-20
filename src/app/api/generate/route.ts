@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getFileContent, commitFiles } from "@/lib/github";
 import { generateFeature } from "@/lib/claude";
+import { verifyCode } from "@/lib/auth";
 import type { HistoryEntry, SiteHistory } from "@/lib/history";
 import type { AggregateUsage, UsageData } from "@/lib/usage";
 import { summarizeForPrompt, summarizeAggregate } from "@/lib/usage";
@@ -48,6 +49,12 @@ export async function POST(request: Request) {
       { error: `Rate limited. Try again in ${waitSec}s.` },
       { status: 429 }
     );
+  }
+
+  // Verify access code
+  const accessCode = request.headers.get("x-access-code") || "";
+  if (!verifyCode(accessCode)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
   try {
