@@ -243,10 +243,10 @@ export default function ConversationStrip({
       className="sticky top-4 z-30 mx-auto max-w-xl mb-8 transition-all duration-300"
     >
       <div
-        className={`rounded-2xl border bg-gray-900/95 backdrop-blur-md shadow-lg overflow-hidden transition-all duration-300 ${
+        className={`rounded-2xl border bg-leaf-900/95 backdrop-blur-md shadow-lg overflow-hidden transition-all duration-300 ${
           expanded
-            ? "border-violet-500/40 shadow-violet-500/10"
-            : "border-gray-800 hover:border-gray-700"
+            ? "border-leaf-400/40 shadow-leaf-400/10"
+            : "border-leaf-700 hover:border-leaf-400/30"
         }`}
       >
         {/* Messages — only visible when expanded */}
@@ -260,13 +260,13 @@ export default function ConversationStrip({
                 key={i}
                 className={`rounded-lg px-2.5 py-1.5 ${
                   msg.role === "user"
-                    ? "bg-violet-600/15 self-end max-w-[80%]"
-                    : "bg-gray-800/50 self-start max-w-[90%]"
+                    ? "bg-leaf-400/15 self-end max-w-[80%]"
+                    : "bg-leaf-700/50 self-start max-w-[90%]"
                 }`}
               >
                 <p
                   className={`text-sm leading-relaxed ${
-                    msg.role === "user" ? "text-violet-300" : "text-gray-400"
+                    msg.role === "user" ? "text-leaf-100" : "text-gray-400"
                   }`}
                 >
                   {msg.text}
@@ -279,10 +279,10 @@ export default function ConversationStrip({
                         key={j}
                         onClick={() => handleOption(opt)}
                         disabled={isActive}
-                        className="rounded-md border border-gray-700 hover:border-violet-500 bg-gray-900/80 hover:bg-violet-600/20 px-2 py-0.5 transition-all cursor-pointer disabled:opacity-50"
+                        className="rounded-md border border-leaf-700 hover:border-leaf-400 bg-leaf-900/80 hover:bg-leaf-400/20 px-2 py-0.5 transition-all cursor-pointer disabled:opacity-50"
                         title={opt.description}
                       >
-                        <span className="text-xs font-medium text-gray-300 hover:text-violet-300">
+                        <span className="text-xs font-medium text-gray-300 hover:text-leaf-100">
                           {opt.label}
                         </span>
                       </button>
@@ -294,13 +294,13 @@ export default function ConversationStrip({
 
             {isActive && (
               <div className="flex items-center gap-1.5 px-1 py-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce" />
+                <span className="h-1.5 w-1.5 rounded-full bg-leaf-400 animate-bounce" />
                 <span
-                  className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce"
+                  className="h-1.5 w-1.5 rounded-full bg-leaf-400 animate-bounce"
                   style={{ animationDelay: "0.15s" }}
                 />
                 <span
-                  className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce"
+                  className="h-1.5 w-1.5 rounded-full bg-leaf-400 animate-bounce"
                   style={{ animationDelay: "0.3s" }}
                 />
                 {generating && (
@@ -316,7 +316,7 @@ export default function ConversationStrip({
         {/* Input bar — always visible */}
         <div
           className={`flex items-center gap-2 px-3 py-2.5 ${
-            expanded && hasMessages ? "border-t border-gray-800/50" : ""
+            expanded && hasMessages ? "border-t border-leaf-700/50" : ""
           }`}
         >
           <svg
@@ -347,7 +347,7 @@ export default function ConversationStrip({
             <button
               onClick={() => sendMessage(input)}
               disabled={isActive}
-              className="shrink-0 text-violet-400 hover:text-violet-300 disabled:opacity-30 cursor-pointer transition-colors"
+              className="shrink-0 text-leaf-200 hover:text-leaf-100 disabled:opacity-30 cursor-pointer transition-colors"
             >
               <svg
                 className="h-4 w-4"

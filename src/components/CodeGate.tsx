@@ -79,12 +79,12 @@ export default function CodeGate({ children }: { children: React.ReactNode }) {
   if (unlocked) return <>{children}</>;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-950 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-leaf-950 px-4">
       <div className="text-center">
-        <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent mb-3">
+        <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-r from-leaf-100 via-leaf-200 to-leaf-400 bg-clip-text text-transparent mb-3">
           GenUI
         </h1>
-        <p className="text-gray-500 text-sm mb-8">Enter access code</p>
+        <p className="text-leaf-200/50 text-sm mb-8">Enter access code</p>
 
         <div className="flex gap-3 justify-center mb-4">
           {code.map((digit, i) => (
@@ -100,8 +100,8 @@ export default function CodeGate({ children }: { children: React.ReactNode }) {
               onPaste={i === 0 ? handlePaste : undefined}
               disabled={checking}
               autoFocus={i === 0}
-              className={`w-14 h-16 text-center text-2xl font-mono rounded-xl border-2 bg-gray-900 outline-none transition-all
-                ${error ? "border-red-500 text-red-400" : "border-gray-700 text-white focus:border-violet-500"}
+              className={`w-14 h-16 text-center text-2xl font-mono rounded-xl border-2 bg-leaf-900 outline-none transition-all
+                ${error ? "border-red-500 text-red-400" : "border-leaf-700 text-white focus:border-leaf-400"}
                 ${checking ? "opacity-50" : ""}
               `}
             />
@@ -109,7 +109,7 @@ export default function CodeGate({ children }: { children: React.ReactNode }) {
         </div>
 
         {error && (
-          <p className="text-sm text-red-500">Wrong code — try again</p>
+          <p className="text-sm text-red-400">Wrong code — try again</p>
         )}
       </div>
     </div>

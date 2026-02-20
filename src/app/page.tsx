@@ -141,16 +141,16 @@ export default function Home() {
     <main className={`min-h-screen px-4 pt-8 pb-12 sm:px-6 lg:px-8 ${fontClass}`}>
       {/* Header */}
       <div className="mx-auto max-w-3xl text-center mb-6">
-        <h1 className="text-4xl sm:text-5xl font-bold tracking-tight bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent">
+        <h1 className="text-4xl sm:text-5xl font-bold tracking-tight bg-gradient-to-r from-leaf-100 via-leaf-200 to-leaf-400 bg-clip-text text-transparent">
           GenUI
         </h1>
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-leaf-200/40">
           A self-evolving website
         </p>
         {allEntries.length > 0 && (
-          <div className="mt-2 flex items-center justify-center gap-3 text-xs text-gray-600">
+          <div className="mt-2 flex items-center justify-center gap-3 text-xs text-leaf-200/40">
             <span>{allEntries.length} features</span>
-            <span className="text-gray-700">·</span>
+            <span className="text-leaf-700">·</span>
             <span>{history.totalLinesOfCode} lines</span>
           </div>
         )}
@@ -173,7 +173,7 @@ export default function Home() {
           {crashedCount > 0 && (
             <button
               onClick={retryCrashed}
-              className="text-xs text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+              className="text-xs text-red-400/80 hover:text-red-300 transition-colors cursor-pointer"
             >
               {crashedCount} crashed — retry
             </button>
@@ -181,7 +181,7 @@ export default function Home() {
           {hiddenCount > 0 && (
             <button
               onClick={showAll}
-              className="text-xs text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
+              className="text-xs text-leaf-200/40 hover:text-leaf-200 transition-colors cursor-pointer"
             >
               {hiddenCount} hidden — show all
             </button>
@@ -215,7 +215,7 @@ export default function Home() {
       )}
 
       {/* Footer */}
-      <footer className="mt-20 text-center text-xs text-gray-600">
+      <footer className="mt-20 text-center text-xs text-leaf-700">
         Built with Next.js + Claude API + GitHub API + Vercel
       </footer>
 

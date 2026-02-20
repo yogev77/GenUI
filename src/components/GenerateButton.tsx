@@ -51,12 +51,10 @@ export default function GenerateButton() {
       });
 
       if (data.deploying) {
-        // Production — wait for Vercel redeploy then reload
         setStatus("deploying");
         await new Promise((r) => setTimeout(r, 50000));
         window.location.reload();
       } else {
-        // Dev — HMR handles it
         setStatus("done");
         setTimeout(() => setStatus("idle"), 5000);
       }
@@ -79,12 +77,12 @@ export default function GenerateButton() {
           transition-all duration-300
           ${
             isWorking
-              ? "bg-violet-500/80 cursor-wait text-white"
+              ? "bg-leaf-400/80 cursor-wait text-white"
               : status === "error"
                 ? "bg-red-500/80 hover:bg-red-500 text-white cursor-pointer"
                 : status === "done"
-                  ? "bg-green-500/80 text-white cursor-default"
-                  : "bg-violet-600 hover:bg-violet-500 hover:scale-105 active:scale-95 text-white cursor-pointer"
+                  ? "bg-leaf-200/80 text-leaf-950 cursor-default"
+                  : "bg-leaf-400 hover:bg-leaf-200 hover:text-leaf-950 hover:scale-105 active:scale-95 text-white cursor-pointer"
           }
           shadow-md hover:shadow-lg
         `}
@@ -128,20 +126,20 @@ export default function GenerateButton() {
       </button>
 
       {(status === "deploying" || status === "done") && result && (
-        <p className="text-xs text-center text-gray-500 max-w-xs">
-          <span className={status === "done" ? "text-green-400" : "text-violet-400"}>
+        <p className="text-xs text-center text-leaf-200/60 max-w-xs">
+          <span className={status === "done" ? "text-leaf-100" : "text-leaf-200"}>
             {result.feature.replace(/([A-Z])/g, " $1").trim()}
           </span>
           {" — "}
           {status === "deploying" ? (
             <span className="animate-pulse">deploying, page will refresh...</span>
           ) : (
-            <span className="text-gray-600">+{result.linesOfCode} lines</span>
+            <span className="text-leaf-700">+{result.linesOfCode} lines</span>
           )}
         </p>
       )}
 
-      {error && <p className="text-xs text-red-500 text-center">{error}</p>}
+      {error && <p className="text-xs text-red-400 text-center">{error}</p>}
     </div>
   );
 }

@@ -209,10 +209,10 @@ export default function FeatureCard({
       <div
         ref={containerRef}
         onClick={handleInteraction}
-        className={`group relative rounded-2xl border bg-gray-900 shadow-lg transition-all duration-500 ease-out ${
+        className={`group relative rounded-2xl border bg-leaf-900 shadow-lg transition-all duration-500 ease-out ${
           expanded
-            ? "border-violet-500/60 shadow-2xl shadow-violet-500/20 z-50"
-            : "border-gray-800 hover:border-gray-700 z-0"
+            ? "border-leaf-400/60 shadow-2xl shadow-leaf-400/20 z-50"
+            : "border-leaf-700 hover:border-leaf-400/30 z-0"
         }`}
         style={{
           contain: expanded ? undefined : "layout style paint",
@@ -226,10 +226,10 @@ export default function FeatureCard({
           <button
             data-card-control
             onClick={(e) => { e.stopPropagation(); onMoveLeft?.(); }}
-            className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 hover:bg-violet-600 border border-gray-700 hover:border-violet-500 rounded-full w-6 h-6 flex items-center justify-center cursor-pointer shadow-lg"
+            className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-leaf-700 hover:bg-leaf-400 border border-leaf-700 hover:border-leaf-200 rounded-full w-6 h-6 flex items-center justify-center cursor-pointer shadow-lg"
             title="Move left"
           >
-            <svg className="h-3 w-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <svg className="h-3 w-3 text-leaf-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
@@ -240,10 +240,10 @@ export default function FeatureCard({
           <button
             data-card-control
             onClick={(e) => { e.stopPropagation(); onMoveRight?.(); }}
-            className="absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 hover:bg-violet-600 border border-gray-700 hover:border-violet-500 rounded-full w-6 h-6 flex items-center justify-center cursor-pointer shadow-lg"
+            className="absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-leaf-700 hover:bg-leaf-400 border border-leaf-700 hover:border-leaf-200 rounded-full w-6 h-6 flex items-center justify-center cursor-pointer shadow-lg"
             title="Move right"
           >
-            <svg className="h-3 w-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <svg className="h-3 w-3 text-leaf-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
           </button>
@@ -251,28 +251,28 @@ export default function FeatureCard({
 
         {/* Top bar */}
         <div className="flex items-center justify-between px-3 pt-2.5 pb-1">
-          <h3 className="text-xs font-medium text-gray-500 font-mono truncate mr-2">
+          <h3 className="text-xs font-medium text-leaf-200/50 font-mono truncate mr-2">
             {name.replace(/([A-Z])/g, " $1").trim()}
           </h3>
           <div data-card-control className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
             <button
               onClick={(e) => { e.stopPropagation(); handleImprove(); }}
               disabled={improving}
-              className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-gray-800 hover:bg-violet-600/30 text-gray-500 hover:text-violet-300 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-wait"
+              className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-leaf-700 hover:bg-leaf-400/30 text-leaf-200/60 hover:text-leaf-100 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-wait"
               title="Improve with AI"
             >
               {improving ? "..." : "✦"}
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-              className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-gray-800 hover:bg-gray-700 text-gray-500 hover:text-gray-300 cursor-pointer transition-colors"
+              className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-leaf-700 hover:bg-leaf-400/30 text-leaf-200/60 hover:text-leaf-100 cursor-pointer transition-colors"
               title={expanded ? "Collapse" : "Expand"}
             >
               {expanded ? "↙" : "↗"}
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onHide(); }}
-              className="text-gray-600 hover:text-gray-300 cursor-pointer p-0.5"
+              className="text-leaf-700 hover:text-leaf-200 cursor-pointer p-0.5"
               title="Hide this feature"
             >
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -284,8 +284,8 @@ export default function FeatureCard({
 
         {/* Improving overlay */}
         {improving && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-900/80 rounded-2xl">
-            <div className="flex items-center gap-2 text-violet-400 text-sm">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-leaf-900/80 rounded-2xl">
+            <div className="flex items-center gap-2 text-leaf-200 text-sm">
               <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>

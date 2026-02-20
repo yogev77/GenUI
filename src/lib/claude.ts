@@ -78,6 +78,15 @@ Requirements for the component:
 - First line MUST be: "use client";
 - Export default a functional React component
 - Use ONLY Tailwind CSS for styling (no CSS modules, no styled-components, no global styles, no document.style)
+- COLOR PALETTE: The site uses a "Flavor of Leaves" palette. Use these custom Tailwind colors:
+  - bg-leaf-950 (#083a58) — deepest background
+  - bg-leaf-900 (#0B486B) — card backgrounds
+  - bg-leaf-700 (#245151) — borders, secondary surfaces
+  - text-leaf-400 / bg-leaf-400 (#4D9C73) — primary accent, buttons
+  - text-leaf-200 / bg-leaf-200 (#A8DBA8) — soft green, hover states
+  - text-leaf-100 / bg-leaf-100 (#CFF09E) — bright lime, highlights
+  - You can also use standard Tailwind gray/white for text readability
+  - Prefer these leaf-* colors over violet, blue, or other accent colors
 - Fully self-contained in a single file — NO external API calls, NO external images/assets, NO external URLs
 - SANDBOXED: your component runs inside a contained card. It must NOT reach outside its own React tree. Only use refs to elements you render yourself.
 - RESPONSIVE: the card can be small (~300px), medium (~600px), or large (~900px). Your component MUST fill its container width using w-full and relative units. Never use fixed pixel widths. Use flex-wrap, grid with auto-fit/auto-fill, and percentage-based sizing so content reflows at any card size. Canvas elements should use 100% width.
@@ -153,6 +162,7 @@ Requirements:
 - First line MUST be: "use client";
 - Export default a functional React component
 - Use ONLY Tailwind CSS for styling
+- COLOR PALETTE: Use leaf-* custom Tailwind colors: leaf-950 (#083a58), leaf-900 (#0B486B), leaf-700 (#245151), leaf-400 (#4D9C73), leaf-200 (#A8DBA8), leaf-100 (#CFF09E). Prefer these over violet/blue accents.
 - Fully self-contained — NO external API calls, NO external images/assets
 - RESPONSIVE: use w-full and relative units, never fixed pixel widths
 - You may use inline SVG, CSS animations via Tailwind, Web Audio API, Canvas API

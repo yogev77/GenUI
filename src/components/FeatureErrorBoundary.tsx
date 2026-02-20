@@ -39,7 +39,7 @@ export default class FeatureErrorBoundary extends React.Component<Props, State> 
           </p>
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
-            className="mt-2 text-xs text-violet-400 hover:text-violet-300 underline cursor-pointer"
+            className="mt-2 text-xs text-leaf-400 hover:text-leaf-200 underline cursor-pointer"
           >
             Try again
           </button>
