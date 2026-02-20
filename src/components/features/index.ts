@@ -7,3 +7,4 @@ export { default as FeatureTimeline } from './FeatureTimeline';
 export { default as WaveformSynth } from './WaveformSynth';
 export { default as PixelArt } from './PixelArt';
 export { default as FlowField } from './FlowField';
+export { default as AdaptiveGrid } from './AdaptiveGrid';
