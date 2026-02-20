@@ -301,7 +301,7 @@ export default function FeatureCard({
           }`}
           style={{ contain: "layout paint", isolation: "isolate" }}
         >
-          <div className="w-full h-full overflow-auto scrollbar-thin overscroll-contain">
+          <div className={`w-full h-full ${expanded ? "overflow-auto scrollbar-thin overscroll-contain" : "overflow-hidden"}`}>
             <div className="w-full [&>*]:w-full [&>*]:max-w-full [&_canvas]:max-w-full [&_img]:max-w-full [&_svg]:max-w-full">
               <FeatureErrorBoundary name={name} onCrash={onCrash}>
                 <Component />
