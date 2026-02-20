@@ -54,5 +54,33 @@
     "sessionId": "7udmkrnh",
     "type": "page_view",
     "timestamp": "2026-02-20T12:11:28.465Z"
+  },
+  {
+    "funnelId": "eddy-english-lessons",
+    "pageName": "EddyEnglishLanding",
+    "sessionId": "7udmkrnh",
+    "type": "page_view",
+    "timestamp": "2026-02-20T12:09:54.599Z"
+  },
+  {
+    "funnelId": "eddy-english-lessons",
+    "pageName": "EddyEnglishLanding",
+    "sessionId": "lbuczr6c",
+    "type": "page_view",
+    "timestamp": "2026-02-20T12:12:01.610Z"
+  },
+  {
+    "funnelId": "tinytap",
+    "pageName": "TinyTapLanding",
+    "sessionId": "tk1kxsn4",
+    "type": "page_view",
+    "timestamp": "2026-02-20T12:12:07.424Z"
+  },
+  {
+    "funnelId": "eddy-english-lessons",
+    "pageName": "EddyEnglishLanding",
+    "sessionId": "rgiq6tqc",
+    "type": "page_view",
+    "timestamp": "2026-02-20T12:12:12.806Z"
   }
 ]
