@@ -21,7 +21,39 @@
     ],
     "createdAt": "2026-02-20T11:35:04.404Z",
     "kpis": {
-      "totalVisitors": 5,
+      "totalVisitors": 3,
+      "ctaClicks": 0,
+      "emailCaptures": 0,
+      "fakePurchases": 0,
+      "avgScrollDepth": 0,
+      "conversionRate": 0
+    },
+    "logs": [],
+    "experiments": []
+  },
+  {
+    "id": "tinytap",
+    "productInfo": {
+      "productName": "TinyTap",
+      "productType": "saas",
+      "description": "An educational platform that allows users to create interactive games and learning content while accessing educational materials created by others. Covers subjects like math, language, science, and social skills.",
+      "price": "9.99",
+      "targetAudience": "educators, parents, children, and content creators focused on educational gaming",
+      "uniqueSellingPoints": [
+        "Create custom educational games and activities",
+        "Access library of games created by other users",
+        "Covers multiple subjects from early childhood to advanced topics"
+      ],
+      "tone": "casual"
+    },
+    "pages": [
+      "TinyTapLanding",
+      "TinyTapDetails",
+      "TinyTapCheckout"
+    ],
+    "createdAt": "2026-02-20T12:11:46.791Z",
+    "kpis": {
+      "totalVisitors": 0,
       "ctaClicks": 0,
       "emailCaptures": 0,
       "fakePurchases": 0,
