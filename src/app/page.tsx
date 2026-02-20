@@ -6,6 +6,7 @@ import LemonLogo from "@/components/LemonLogo";
 import SetupWizard from "@/components/funnel/SetupWizard";
 import FunnelDashboard from "@/components/funnel/FunnelDashboard";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { TAGLINE } from "@/lib/constants";
 
 function AccountMenu() {
   const { user, supabase } = useAuth();
@@ -120,7 +121,7 @@ function HomeInner() {
             </h1>
           </button>
           <p className="text-gray-500 text-sm">
-            AI-generated sales funnels that evolve from visitor data
+            {TAGLINE}
           </p>
         </div>
 

@@ -356,18 +356,34 @@ export async function updateFunnelProductInfo(
 ): Promise<void> {
   const sb = createServiceClient();
 
-  const { error } = await sb
+  const update: Record<string, unknown> = {
+    product_name: productInfo.productName,
+    product_type: productInfo.productType,
+    description: productInfo.description,
+    price: productInfo.price,
+    target_audience: productInfo.targetAudience,
+    unique_selling_points: productInfo.uniqueSellingPoints,
+    tone: productInfo.tone,
+    image_urls: productInfo.imageUrls ?? null,
+    logo_url: productInfo.logoUrl ?? null,
+    image_contexts: productInfo.imageContexts ?? null,
+  };
+  if (productInfo.style) update.style = productInfo.style;
+
+  let { error } = await sb
     .from("funnels")
-    .update({
-      product_name: productInfo.productName,
-      product_type: productInfo.productType,
-      description: productInfo.description,
-      price: productInfo.price,
-      target_audience: productInfo.targetAudience,
-      unique_selling_points: productInfo.uniqueSellingPoints,
-      tone: productInfo.tone,
-    })
+    .update(update)
     .eq("id", funnelId);
+
+  // Fallback: if new columns don't exist yet
+  if (error?.message && /style|image_urls|logo_url|image_contexts/.test(error.message)) {
+    delete update.style;
+    delete update.image_urls;
+    delete update.logo_url;
+    delete update.image_contexts;
+    const retry = await sb.from("funnels").update(update).eq("id", funnelId);
+    error = retry.error;
+  }
 
   if (error) throw new Error(error.message);
 }

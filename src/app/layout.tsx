@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Permanent_Marker } from "next/font/google";
+import { TAGLINE } from "@/lib/constants";
+import ParticleBackground from "@/components/ParticleBackground";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -20,8 +22,7 @@ const marker = Permanent_Marker({
 
 export const metadata: Metadata = {
   title: "Sell This Pen — AI Sales Funnels",
-  description:
-    "AI-generated sales funnels that evolve from visitor data. Create, test, and optimize landing pages automatically.",
+  description: `${TAGLINE}. Create, test, and optimize landing pages automatically.`,
 };
 
 export default function RootLayout({
@@ -34,6 +35,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${marker.variable} antialiased bg-white text-gray-900 min-h-screen`}
       >
+        <ParticleBackground />
         {children}
       </body>
     </html>

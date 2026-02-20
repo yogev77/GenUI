@@ -515,6 +515,7 @@ CRITICAL REQUIREMENTS:
 - Use ONLY Tailwind CSS for styling — use leaf-* custom colors as shown above
 ${colorGuide}${fontGuide}${styleNotes}${imageGuide}
 - Self-contained (no fetch calls, no localStorage). External product images from the URLs above ARE allowed.
+- MOBILE FIRST: Design for 375px mobile first, then enhance for larger screens. Stack layouts vertically on mobile (flex-col), horizontal on sm:+ (sm:flex-row). Buttons full-width on mobile (w-full sm:w-auto). Touch targets min 44px. No horizontal scroll. Use responsive text sizes (text-sm on mobile, sm:text-base+).
 - Fully responsive using w-full, max-w-*, flex, grid
 - TypeScript: type all useRef and useState calls
 - Do NOT import anything except React hooks from 'react'${type === "checkout" ? " and FakeCheckout" : ""}
@@ -655,6 +656,7 @@ CRITICAL REQUIREMENTS:
 - Use ONLY Tailwind CSS for styling — use leaf-* custom colors as shown above
 ${colorGuide}${fontGuide}${styleNotesGuide}${imageGuide}${checkoutInstructions}
 - Self-contained (no fetch calls, no localStorage). External product images from the URLs above ARE allowed.
+- MOBILE FIRST: Design for 375px mobile first, then enhance for larger screens. Stack layouts vertically on mobile (flex-col), horizontal on sm:+ (sm:flex-row). Buttons full-width on mobile (w-full sm:w-auto). Touch targets min 44px. No horizontal scroll. Use responsive text sizes (text-sm on mobile, sm:text-base+).
 - Fully responsive using w-full, max-w-*, flex, grid
 - TypeScript: type all useRef and useState calls
 - Do NOT import anything except React hooks from 'react'${spec.hasCheckout ? " and FakeCheckout" : ""}

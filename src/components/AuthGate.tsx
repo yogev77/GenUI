@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { TAGLINE } from "@/lib/constants";
 import LemonLogo from "./LemonLogo";
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
@@ -77,10 +78,13 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           <div className="flex justify-center mb-3">
             <LemonLogo className="w-28 h-28" />
           </div>
-          <h1 className="text-4xl font-marker tracking-tight bg-gradient-to-r from-leaf-700 via-leaf-400 to-leaf-700 bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-marker tracking-tight bg-gradient-to-r from-leaf-700 via-leaf-400 to-leaf-700 bg-clip-text text-transparent mb-1">
             Sell This Pen
           </h1>
-          <p className="text-gray-400 text-sm">
+          <p className="text-gray-500 text-sm mb-1">
+            {TAGLINE}
+          </p>
+          <p className="text-gray-400 text-xs">
             {mode === "login" ? "Sign in to your account" : "Create your account"}
           </p>
         </div>

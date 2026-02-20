@@ -48,6 +48,7 @@ IMPORTANT:
 - hasCheckout should be true for pages that need a payment form
 - description should be detailed enough to generate the page (mention specific sections, content, layout)
 - Do NOT include productInfo in the brief — it's provided separately
+- WHEN UPDATING AN EXISTING FUNNEL: The brief REPLACES all pages. You MUST include every page in pageSpecs — unchanged existing pages AND any new/modified ones. If you omit existing pages, they will be permanently deleted.
 
 SUGGESTION FORMAT (always include 2-3 after your response):
 >> suggestion text
@@ -87,8 +88,9 @@ function buildContextPrefix(context?: ChatRequestBody["context"]): string {
   if (context.existingFunnel) {
     const f = context.existingFunnel;
     parts.push(
-      `User has an existing funnel for "${f.productName}" with pages: ${f.pages.join(", ")}.\n` +
-      `They want to update it. Ask what changes they'd like to make.`
+      `User has an existing funnel for "${f.productName}" with these pages (in order): ${f.pages.join(" → ")}.\n` +
+      `They want to update it. Ask what changes they'd like to make.\n\n` +
+      `CRITICAL: When you produce the <brief>, you MUST include ALL pages in pageSpecs — both existing pages that stay unchanged AND any new/modified pages. The brief REPLACES the entire funnel. If you only include new pages, the existing pages will be deleted. Always list every page in order.`
     );
   }
 
