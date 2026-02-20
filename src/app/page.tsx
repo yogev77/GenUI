@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import GenerateButton from "@/components/GenerateButton";
 import EvolutionLog from "@/components/EvolutionLog";
 import FeatureCard from "@/components/FeatureCard";
@@ -69,8 +69,6 @@ export default function Home() {
   const [order, setOrder] = useState<string[]>([]);
   const [prefs, setPrefs] = useState<ReturnType<typeof getPreferences> | null>(null);
   const [frustrationCount, setFrustrationCount] = useState(0);
-  const [dragOver, setDragOver] = useState<string | null>(null);
-  const dragSource = useRef<string | null>(null);
 
   useEffect(() => {
     setHidden(getHidden());
@@ -122,21 +120,20 @@ export default function Home() {
     localStorage.removeItem(CRASHED_KEY);
   }
 
-  const handleReorder = useCallback((from: string, to: string) => {
-    if (from === to) return;
+  const moveFeature = useCallback((name: string, direction: -1 | 1) => {
     setOrder((prev) => {
       const names = prev.length
         ? [...prev]
         : visibleEntries.map(([n]) => n);
-      const fi = names.indexOf(from);
-      const ti = names.indexOf(to);
-      if (fi === -1 || ti === -1) return prev;
-      names.splice(fi, 1);
-      names.splice(ti, 0, from);
+      const idx = names.indexOf(name);
+      if (idx === -1) return prev;
+      const newIdx = idx + direction;
+      if (newIdx < 0 || newIdx >= names.length) return prev;
+      // swap
+      [names[idx], names[newIdx]] = [names[newIdx], names[idx]];
       localStorage.setItem(ORDER_KEY, JSON.stringify(names));
-      return names;
+      return [...names];
     });
-    setDragOver(null);
   }, [visibleEntries]);
 
   return (
@@ -196,16 +193,10 @@ export default function Home() {
       {visibleEntries.length > 0 && (
         <div className="mx-auto max-w-7xl">
           <div
-            className="grid gap-4"
+            className="grid gap-5"
             style={{ gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 320px), 1fr))" }}
-            onDragLeave={(e) => {
-              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                setDragOver(null);
-              }
-            }}
-            onDragEnd={() => { dragSource.current = null; setDragOver(null); }}
           >
-            {visibleEntries.map(([name, Component]) => (
+            {visibleEntries.map(([name, Component], i) => (
               <FeatureCard
                 key={name}
                 name={name}
@@ -213,13 +204,10 @@ export default function Home() {
                 onHide={() => hideFeature(name)}
                 onFrustration={handleFrustration}
                 onCrash={handleCrash}
-                onDragStart={() => { dragSource.current = name; }}
-                onDragOver={() => setDragOver(name)}
-                onDrop={() => {
-                  if (dragSource.current) handleReorder(dragSource.current, name);
-                  dragSource.current = null;
-                }}
-                isDragTarget={dragOver === name && dragSource.current !== name}
+                onMoveLeft={() => moveFeature(name, -1)}
+                onMoveRight={() => moveFeature(name, 1)}
+                isFirst={i === 0}
+                isLast={i === visibleEntries.length - 1}
               />
             ))}
           </div>
