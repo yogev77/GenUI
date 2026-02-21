@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 import { createAuthClient } from "@/lib/supabase-server";
 import type { ChatMessage, FunnelBrief } from "@/lib/funnel-types";
 import type { ProductInfo } from "@/lib/funnel-claude";
-
-const client = new Anthropic();
+import { anthropicClient as client, setUsageContext } from "@/lib/usage";
 
 let lastChatTime = 0;
 const RATE_LIMIT_MS = 3_000;
@@ -15,7 +13,8 @@ FLOW:
 1. Understand their product/service
 2. Discuss funnel structure: which pages, in what order
 3. Discuss design preferences
-4. Present a structured brief for confirmation
+4. Present a brief for confirmation — the UI shows a nice card, so keep your text SHORT
+5. Wait for the user to explicitly confirm, THEN mark as confirmed
 
 RULES:
 - Stay focused on funnel design. Redirect off-topic requests politely.
@@ -26,9 +25,13 @@ RULES:
   - Landing + Checkout + ThankYou (3)
   - Landing + Features + Pricing + Checkout + ThankYou (5)
   - Landing + Quiz steps + Results + Checkout + ThankYou (6+)
-- Limit to 1-10 pages. Block non-funnel requests (app building, etc.).
-- When ready, present brief inside <brief>JSON</brief> tags, then ask to confirm.
-- After user confirms, include <confirmed/> in your response.
+- Limit to 1-20 pages. Block non-funnel requests (app building, etc.).
+
+PRESENTING THE BRIEF:
+- When ready, include <brief>JSON</brief> tags with the structured data.
+- Your visible reply should be SHORT — just say something like "Here's your funnel plan!" The UI will render a visual card from the JSON. Do NOT describe every page in your text — the card handles that.
+- NEVER include <confirmed/> in the same response as <brief>. Always wait for the user to confirm first.
+- After the user explicitly confirms (says ok, yes, looks good, etc.), THEN include <confirmed/> in your response.
 
 BRIEF FORMAT (inside <brief> tags):
 {
@@ -49,6 +52,7 @@ IMPORTANT:
 - description should be detailed enough to generate the page (mention specific sections, content, layout)
 - Do NOT include productInfo in the brief — it's provided separately
 - WHEN UPDATING AN EXISTING FUNNEL: The brief REPLACES all pages. You MUST include every page in pageSpecs — unchanged existing pages AND any new/modified ones. If you omit existing pages, they will be permanently deleted.
+- STYLE-ONLY CHANGES: If the user only wants to change colors, fonts, or visual style without modifying page structure, produce a brief with the SAME pageSpecs (identical componentSuffix values in the same order). The system will detect this and apply style changes instantly without regenerating pages.
 
 SUGGESTION FORMAT (always include 2-3 after your response):
 >> suggestion text
@@ -114,17 +118,30 @@ function parseResponse(text: string): {
     reply = reply.replace(/<confirmed\s*\/>/g, "").trim();
   }
 
-  // Extract <brief>JSON</brief>
+  // Extract <brief>JSON</brief> (or truncated <brief>JSON with no closing tag)
   const briefMatch = reply.match(/<brief>([\s\S]*?)<\/brief>/);
-  if (briefMatch) {
+  const truncatedBriefMatch = !briefMatch ? reply.match(/<brief>([\s\S]*)/) : null;
+  const briefJson = briefMatch?.[1] ?? truncatedBriefMatch?.[1];
+  if (briefJson) {
     try {
-      const parsed = JSON.parse(briefMatch[1]);
+      // Try parsing as-is first; if truncated, attempt to repair
+      let jsonStr = briefJson.trim();
+      if (truncatedBriefMatch) {
+        // Try to close truncated JSON: add missing brackets
+        if (!jsonStr.endsWith("}")) {
+          // Close any open strings, arrays, objects
+          jsonStr = jsonStr.replace(/,\s*$/, "");
+          jsonStr += ']}';
+        }
+      }
+      const parsed = JSON.parse(jsonStr);
       // brief from AI doesn't include productInfo — we merge it later
       brief = parsed as FunnelBrief;
     } catch {
       // If JSON parse fails, leave brief as null
     }
-    reply = reply.replace(/<brief>[\s\S]*?<\/brief>/g, "").trim();
+    // Strip brief tags (and any truncated brief) from visible reply
+    reply = reply.replace(/<brief>[\s\S]*?(<\/brief>|$)/g, "").trim();
   }
 
   // Extract >> suggestions
@@ -183,9 +200,11 @@ export async function POST(request: Request) {
       });
     }
 
+    setUsageContext({ userId: user.id, operation: "chat" });
+
     const response = await client.messages.create({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 1500,
+      max_tokens: 4000,
       system: systemPrompt,
       messages: claudeMessages,
     });

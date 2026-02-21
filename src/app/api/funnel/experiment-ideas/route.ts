@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { generateExperimentIdeas } from "@/lib/funnel-claude";
 import { createAuthClient } from "@/lib/supabase-server";
+import { setUsageContext } from "@/lib/usage";
 import { getFunnel, getEvents } from "@/lib/funnel-db";
 
 export async function POST(request: Request) {
@@ -11,6 +12,8 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
+
+  setUsageContext({ userId: user.id, operation: "experiment_ideas" });
 
   try {
     const { funnelId } = await request.json();

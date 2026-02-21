@@ -11,6 +11,28 @@ type DeployStatus = "deploying" | "live";
 type Tab = "active" | "trash";
 const PAGE_NAMES = ["Landing Page", "Checkout", "Thank You"];
 
+/** Extract friendly page names by stripping the common prefix from component names */
+function getFriendlyPageNames(pages: string[]): string[] {
+  if (pages.length === 0) return [];
+  if (pages.length === 1) {
+    // Try to extract suffix after last digit sequence or just use the full name
+    const m = pages[0].match(/\d([A-Z][a-z].*)$/);
+    return [m ? m[1].replace(/([A-Z])/g, " $1").trim() : pages[0]];
+  }
+  // Find longest common prefix
+  let prefix = pages[0];
+  for (let i = 1; i < pages.length; i++) {
+    while (!pages[i].startsWith(prefix)) {
+      prefix = prefix.slice(0, -1);
+    }
+  }
+  return pages.map((p) => {
+    const suffix = p.slice(prefix.length);
+    // Add spaces before capitals: "ThankYou" → "Thank You"
+    return suffix ? suffix.replace(/([A-Z])/g, " $1").trim() : `Page`;
+  });
+}
+
 async function checkPageLive(pageName: string): Promise<boolean> {
   try {
     const res = await fetch(`/f/${pageName}`, { method: "HEAD" });
@@ -150,31 +172,73 @@ export default function FunnelDashboard({ onCreateNew }: FunnelDashboardProps) {
     setResumeProgress(funnel.pagesReady);
     setResumeError("");
 
+    let lastReady = funnel.pagesReady;
+    let lastChangeAt = Date.now();
+    let retries = 0;
+    const MAX_RETRIES = 3;
+
     try {
-      for (let i = 0; i < funnel.pages.length; i++) {
-        // Skip already-generated pages
-        if (i < funnel.pagesReady) continue;
-
-        const genRes = await fetch("/api/funnel/generate-page", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ funnelId: funnel.id, pageIndex: i }),
-        });
-
-        if (!genRes.ok) {
-          const data = await genRes.json().catch(() => ({}));
-          throw new Error(data.error || `Failed to generate ${PAGE_NAMES[i] ?? `Page ${i + 1}`}`);
-        }
-
-        setResumeProgress(i + 1);
+      // Kick off server-side generation
+      const kickRes = await fetch("/api/funnel/generate-all", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ funnelId: funnel.id }),
+      });
+      if (!kickRes.ok) {
+        const data = await kickRes.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to start generation");
       }
 
-      // Reload to get updated pagesReady
-      await loadFunnels();
+      // Poll for progress with auto-retrigger
+      const poll = setInterval(async () => {
+        try {
+          const res = await fetch(
+            `/api/funnel/list?funnelId=${funnel.id}`,
+            { credentials: "include" }
+          );
+          if (!res.ok) return;
+          const data = await res.json();
+          const ready = data.funnel?.pagesReady ?? funnel.pagesReady;
+          setResumeProgress(ready);
+
+          if (ready > lastReady) {
+            lastReady = ready;
+            lastChangeAt = Date.now();
+            retries = 0;
+          }
+
+          if (ready >= funnel.pages.length) {
+            clearInterval(poll);
+            setResumingId(null);
+            await loadFunnels();
+            return;
+          }
+
+          // Stall: auto-retrigger up to MAX_RETRIES
+          if (Date.now() - lastChangeAt > 75_000) {
+            if (retries < MAX_RETRIES) {
+              retries++;
+              lastChangeAt = Date.now();
+              fetch("/api/funnel/generate-all", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ funnelId: funnel.id }),
+              }).catch(() => {});
+            } else {
+              clearInterval(poll);
+              setResumeError(`Generation failed after ${MAX_RETRIES} retries. Click Resume to try again.`);
+              setResumingId(null);
+              await loadFunnels();
+            }
+          }
+        } catch {
+          // ignore poll errors
+        }
+      }, 3000);
     } catch (err) {
       setResumeError(err instanceof Error ? err.message : "Generation failed");
-    } finally {
       setResumingId(null);
     }
   }
@@ -189,37 +253,44 @@ export default function FunnelDashboard({ onCreateNew }: FunnelDashboardProps) {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold text-gray-900">Your Funnels</h2>
+      {/* Tab bar + create button */}
+      <div className="flex items-center justify-between gap-3 mb-1">
+        <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+          <button
+            onClick={() => setTab("active")}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors cursor-pointer ${
+              tab === "active"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            Active{activeFunnels.length > 0 ? ` (${activeFunnels.length})` : ""}
+          </button>
           {trashFunnels.length > 0 && (
-            <div className="flex items-center gap-1 text-sm">
-              <button
-                onClick={() => setTab("active")}
-                className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${
-                  tab === "active" ? "bg-leaf-400 text-white" : "text-gray-400 hover:text-gray-600"
-                }`}
-              >
-                Active ({activeFunnels.length})
-              </button>
-              <button
-                onClick={() => setTab("trash")}
-                className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${
-                  tab === "trash" ? "bg-gray-200 text-gray-700" : "text-gray-400 hover:text-gray-600"
-                }`}
-              >
-                Trash ({trashFunnels.length})
-              </button>
-            </div>
+            <button
+              onClick={() => setTab("trash")}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors cursor-pointer ${
+                tab === "trash"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              Trash ({trashFunnels.length})
+            </button>
           )}
         </div>
         <button
           onClick={onCreateNew}
-          className="px-4 py-2 rounded-xl bg-leaf-400 text-white font-medium hover:bg-leaf-400/90 transition-colors text-sm cursor-pointer"
+          className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-leaf-400 text-white font-medium hover:bg-leaf-400/90 transition-colors text-sm cursor-pointer shrink-0"
         >
-          + Create New
+          New Funnel
         </button>
       </div>
+
+      {/* Title */}
+      <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
+        {tab === "active" ? "Your Funnels" : "Trash"}
+      </h2>
 
       {(busyError || resumeError) && (
         <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-sm">
@@ -261,15 +332,15 @@ export default function FunnelDashboard({ onCreateNew }: FunnelDashboardProps) {
               </div>
             )}
 
-            <div className="px-6 py-4 space-y-3">
+            <div className="px-4 sm:px-6 py-4 space-y-3">
               {/* Header row */}
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start justify-between gap-3 sm:gap-4">
                 <FunnelThumb productInfo={funnel.productInfo} />
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <a
                       href={`/GenFunnel/dashboard/${funnel.id}`}
-                      className="text-lg font-bold text-gray-900 truncate hover:text-leaf-700 transition-colors"
+                      className="text-base sm:text-lg font-bold text-gray-900 truncate hover:text-leaf-700 transition-colors"
                     >
                       {funnel.productInfo.productName}
                     </a>
@@ -358,24 +429,33 @@ export default function FunnelDashboard({ onCreateNew }: FunnelDashboardProps) {
                           </button>
                         )
                       ) : isDeploying ? (
-                        <span className="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-300 cursor-not-allowed">
-                          Visit
+                        <span className="p-1.5 rounded-lg border border-gray-200 text-gray-300 cursor-not-allowed" title="Visit">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                          </svg>
                         </span>
                       ) : (
                         <a
                           href={`/f/${funnel.pages[0]}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+                          className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+                          title="Visit"
                         >
-                          Visit
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                          </svg>
                         </a>
                       )}
                       <a
                         href={`/GenFunnel/dashboard/${funnel.id}`}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium bg-leaf-400 text-white hover:bg-leaf-400/90 transition-colors"
+                        className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+                        title="Dashboard"
                       >
-                        Dashboard
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                          <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0"/>
+                          <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115z"/>
+                        </svg>
                       </a>
                     </>
                   )}
@@ -388,55 +468,58 @@ export default function FunnelDashboard({ onCreateNew }: FunnelDashboardProps) {
               </p>
 
               {/* Pages list */}
-              {!funnel.hidden && (
-                <div className="flex flex-wrap gap-1.5">
-                  {funnel.pages.map((page, i) => {
-                    const isResuming = resumingId === funnel.id;
-                    const pageReady = isResuming ? i < resumeProgress : i < funnel.pagesReady;
-                    const pageGenerating = isResuming && i === resumeProgress;
+              {!funnel.hidden && (() => {
+                const names = getFriendlyPageNames(funnel.pages);
+                return (
+                  <div className="flex flex-wrap gap-1.5">
+                    {funnel.pages.map((page, i) => {
+                      const isResuming = resumingId === funnel.id;
+                      const pageReady = isResuming ? i < resumeProgress : i < funnel.pagesReady;
+                      const pageGenerating = isResuming && i === resumeProgress;
 
-                    return (
-                      <span
-                        key={page}
-                        className="inline-flex items-center gap-1 text-xs"
-                      >
-                        {isResuming ? (
-                          pageReady ? (
-                            <svg className="w-4 h-4 text-leaf-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                          ) : pageGenerating ? (
-                            <div className="w-4 h-4 rounded-full border-2 border-t-leaf-400 border-gray-200 animate-spin shrink-0" />
+                      return (
+                        <span
+                          key={page}
+                          className="inline-flex items-center gap-1 text-xs"
+                        >
+                          {isResuming ? (
+                            pageReady ? (
+                              <svg className="w-4 h-4 text-leaf-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            ) : pageGenerating ? (
+                              <div className="w-4 h-4 rounded-full border-2 border-t-leaf-400 border-gray-200 animate-spin shrink-0" />
+                            ) : (
+                              <span className="w-4 h-4 rounded-full bg-gray-100 flex items-center justify-center text-[10px] text-gray-400 font-mono">
+                                {i + 1}
+                              </span>
+                            )
                           ) : (
                             <span className="w-4 h-4 rounded-full bg-gray-100 flex items-center justify-center text-[10px] text-gray-400 font-mono">
                               {i + 1}
                             </span>
-                          )
-                        ) : (
-                          <span className="w-4 h-4 rounded-full bg-gray-100 flex items-center justify-center text-[10px] text-gray-400 font-mono">
-                            {i + 1}
-                          </span>
-                        )}
-                        {isDeploying || (isResuming && !pageReady) ? (
-                          <span className={pageGenerating ? "text-gray-700 font-medium" : "text-gray-400"}>{page}</span>
-                        ) : (
-                          <a
-                            href={`/f/${page}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`transition-colors ${pageReady ? "text-leaf-400 hover:text-leaf-700" : "text-gray-500 hover:text-leaf-400"}`}
-                          >
-                            {page}
-                          </a>
-                        )}
-                        {i < funnel.pages.length - 1 && (
-                          <span className="text-gray-300 ml-0.5">→</span>
-                        )}
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
+                          )}
+                          {isDeploying || (isResuming && !pageReady) ? (
+                            <span className={pageGenerating ? "text-gray-700 font-medium" : "text-gray-400"}>{names[i]}</span>
+                          ) : (
+                            <a
+                              href={`/f/${page}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`transition-colors ${pageReady ? "text-leaf-400 hover:text-leaf-700" : "text-gray-500 hover:text-leaf-400"}`}
+                            >
+                              {names[i]}
+                            </a>
+                          )}
+                          {i < funnel.pages.length - 1 && (
+                            <span className="text-gray-300 ml-0.5">→</span>
+                          )}
+                        </span>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
 
               {/* Stats row */}
               {!funnel.hidden && (

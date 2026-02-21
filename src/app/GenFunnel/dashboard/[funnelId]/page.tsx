@@ -59,14 +59,6 @@ function DashboardInner() {
   return (
     <div className="min-h-screen px-4 py-8">
       <div className="max-w-5xl mx-auto">
-        <div className="mb-6">
-          <a
-            href="/"
-            className="text-gray-400 text-sm hover:text-leaf-400 transition-colors"
-          >
-            &larr; Home
-          </a>
-        </div>
         <FunnelProjectDashboard funnel={funnel} onFunnelUpdate={setFunnel} />
       </div>
     </div>

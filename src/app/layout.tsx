@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Permanent_Marker } from "next/font/google";
 import { TAGLINE } from "@/lib/constants";
-import ParticleBackground from "@/components/ParticleBackground";
+
 import "./globals.css";
 
 const geistSans = Geist({
@@ -35,7 +35,6 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${marker.variable} antialiased bg-white text-gray-900 min-h-screen`}
       >
-        <ParticleBackground />
         {children}
       </body>
     </html>

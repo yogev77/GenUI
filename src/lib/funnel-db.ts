@@ -914,6 +914,46 @@ export async function getPageSpec(
   return (data?.page_spec as PageSpec | null) ?? null;
 }
 
+export async function getNextUngeneratedPage(
+  funnelId: string
+): Promise<{ componentName: string; pageOrder: number } | null> {
+  const sb = createServiceClient();
+  const { data, error } = await sb
+    .from("funnel_pages")
+    .select("component_name, page_order")
+    .eq("funnel_id", funnelId)
+    .is("source_code", null)
+    .order("page_order")
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  return {
+    componentName: (data as { component_name: string; page_order: number }).component_name,
+    pageOrder: (data as { component_name: string; page_order: number }).page_order,
+  };
+}
+
+export async function getAllUngeneratedPages(
+  funnelId: string
+): Promise<{ componentName: string; pageOrder: number }[]> {
+  const sb = createServiceClient();
+  const { data, error } = await sb
+    .from("funnel_pages")
+    .select("component_name, page_order")
+    .eq("funnel_id", funnelId)
+    .is("source_code", null)
+    .order("page_order");
+
+  if (error) throw new Error(error.message);
+  if (!data) return [];
+  return (data as { component_name: string; page_order: number }[]).map((d) => ({
+    componentName: d.component_name,
+    pageOrder: d.page_order,
+  }));
+}
+
 export async function replaceFunnelPages(
   funnelId: string,
   pages: { componentName: string; pageSpec?: PageSpec }[]

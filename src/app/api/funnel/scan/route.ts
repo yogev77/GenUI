@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 import { extractProductInfo } from "@/lib/funnel-claude";
 import { createAuthClient } from "@/lib/supabase-server";
 import { uploadImageFromUrl } from "@/lib/funnel-storage";
 import type { FunnelImage } from "@/lib/funnel-types";
-
-const anthropic = new Anthropic();
+import { anthropicClient as anthropic, setUsageContext } from "@/lib/usage";
 
 let lastScanTime = 0;
 const RATE_LIMIT_MS = 15_000;
@@ -277,6 +275,8 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
+
+  setUsageContext({ userId: user.id, operation: "scan" });
 
   try {
     const body = await request.json();

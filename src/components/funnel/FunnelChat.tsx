@@ -117,7 +117,7 @@ export default function FunnelChat({
   }
 
   return (
-    <div className="flex flex-col h-[500px] max-h-[70vh] max-w-lg mx-auto">
+    <div className="flex flex-col h-[80vh] sm:h-[calc(100vh-12rem)] w-full sm:max-w-2xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 pb-3 border-b border-gray-200 mb-3">
         {onBack && (
@@ -160,7 +160,7 @@ export default function FunnelChat({
         {messages.map((msg, i) => (
           <div
             key={i}
-            className={`px-4 py-3 rounded-xl text-sm leading-relaxed whitespace-pre-wrap ${
+            className={`px-4 py-3 rounded-xl text-sm leading-relaxed whitespace-pre-wrap break-words overflow-hidden ${
               msg.role === "assistant"
                 ? "bg-gray-50 text-gray-800"
                 : "bg-leaf-400/10 text-gray-900 ml-8"

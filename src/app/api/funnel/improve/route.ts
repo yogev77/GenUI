@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { improveFunnelPage } from "@/lib/funnel-claude";
 import { createAuthClient } from "@/lib/supabase-server";
+import { setUsageContext } from "@/lib/usage";
 import {
   getFunnel,
   getEvents,
@@ -34,6 +35,8 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
+
+  setUsageContext({ userId: user.id, operation: "improve_page" });
 
   try {
     const body = await request.json();

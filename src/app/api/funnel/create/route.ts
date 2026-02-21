@@ -4,6 +4,7 @@ import { generateStyle } from "@/lib/funnel-claude";
 import { createAuthClient } from "@/lib/supabase-server";
 import { createFunnel } from "@/lib/funnel-db";
 import type { FunnelBrief } from "@/lib/funnel-types";
+import { setUsageContext } from "@/lib/usage";
 
 let lastCreateTime = 0;
 const RATE_LIMIT_MS = 60_000;
@@ -39,6 +40,8 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
+
+  setUsageContext({ userId: user.id, operation: "create_funnel" });
 
   try {
     const body = await request.json();

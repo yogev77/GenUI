@@ -42,6 +42,12 @@ function AccountMenu() {
           <div className="px-3 py-2 border-b border-gray-100">
             <p className="text-xs text-gray-400 truncate">{user?.email}</p>
           </div>
+          <a
+            href="/GenFunnel/profile"
+            className="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            Profile &amp; Usage
+          </a>
           <button
             onClick={async () => {
               await supabase.auth.signOut();
@@ -96,31 +102,33 @@ function HomeInner() {
     <div className="min-h-screen px-4 py-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="relative text-center mb-10">
-          <div className="absolute right-0 top-0">
+        <div className="mb-6 sm:mb-10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {view === "wizard" && hasFunnels && (
+                <button
+                  onClick={() => setView("dashboard")}
+                  className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                  <span className="hidden sm:inline">Back</span>
+                </button>
+              )}
+              <button
+                onClick={() => hasFunnels && setView("dashboard")}
+                className={`flex items-center gap-3 ${hasFunnels ? "cursor-pointer" : "cursor-default"}`}
+              >
+                <LemonLogo className="w-14 h-14 sm:w-20 sm:h-20" />
+                <h1 className="text-3xl sm:text-4xl font-marker tracking-tight bg-gradient-to-r from-leaf-700 via-leaf-400 to-leaf-700 bg-clip-text text-transparent">
+                  Sell This Pen
+                </h1>
+              </button>
+            </div>
             <AccountMenu />
           </div>
-          {view === "wizard" && hasFunnels && (
-            <button
-              onClick={() => setView("dashboard")}
-              className="absolute left-0 top-0 flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-              Back
-            </button>
-          )}
-          <button
-            onClick={() => hasFunnels && setView("dashboard")}
-            className={`flex items-center justify-center gap-3 mx-auto mb-2 ${hasFunnels ? "cursor-pointer" : "cursor-default"}`}
-          >
-            <LemonLogo className="w-16 h-16 sm:w-20 sm:h-20" />
-            <h1 className="text-4xl font-marker tracking-tight bg-gradient-to-r from-leaf-700 via-leaf-400 to-leaf-700 bg-clip-text text-transparent">
-              Sell This Pen
-            </h1>
-          </button>
-          <p className="text-gray-500 text-sm">
+          <p className="text-leaf-400 text-sm font-bold mt-1">
             {TAGLINE}
           </p>
         </div>

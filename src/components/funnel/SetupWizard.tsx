@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import type { ProductInfo } from "@/lib/funnel-claude";
 import type { FunnelBrief, FunnelImage } from "@/lib/funnel-types";
 import FunnelChat from "./FunnelChat";
@@ -30,6 +30,10 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const [generatingPage, setGeneratingPage] = useState(-1);
   const [generatedCount, setGeneratedCount] = useState(0);
   const [pageNames, setPageNames] = useState<string[]>([]);
+  const [stalled, setStalled] = useState(false);
+  const [createdFunnelId, setCreatedFunnelId] = useState("");
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastProgressRef = useRef<{ count: number; time: number }>({ count: 0, time: Date.now() });
 
   async function handleScan() {
     setScanning(true);
@@ -83,9 +87,106 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     setPhase("chat");
   }
 
+  const retriesRef = useRef(0);
+  const lastErrorRef = useRef("");
+  const MAX_AUTO_RETRIES = 3;
+
+  async function kickOffGeneration(funnelId: string): Promise<string | null> {
+    try {
+      const res = await fetch("/api/funnel/generate-all", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ funnelId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data.error) {
+        lastErrorRef.current = data.error;
+        return data.error;
+      }
+      if (data.lastError) {
+        lastErrorRef.current = data.lastError;
+      }
+      return null;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Network error";
+      lastErrorRef.current = msg;
+      return msg;
+    }
+  }
+
+  const startPolling = useCallback((funnelId: string, names: string[]) => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    setStalled(false);
+    setError("");
+    lastProgressRef.current = { count: 0, time: Date.now() };
+    retriesRef.current = 0;
+    lastErrorRef.current = "";
+
+    pollRef.current = setInterval(async () => {
+      try {
+        const pollRes = await fetch(
+          `/api/funnel/list?funnelId=${funnelId}`,
+          { credentials: "include" }
+        );
+        if (!pollRes.ok) return;
+        const data = await pollRes.json();
+        const ready = data.funnel?.pagesReady ?? 0;
+        setGeneratedCount(ready);
+        setGeneratingPage(ready < names.length ? ready : names.length - 1);
+
+        // Track progress for stall detection
+        if (ready > lastProgressRef.current.count) {
+          lastProgressRef.current = { count: ready, time: Date.now() };
+          retriesRef.current = 0; // Reset retries on progress
+          lastErrorRef.current = "";
+        }
+
+        if (ready >= names.length) {
+          if (pollRef.current) clearInterval(pollRef.current);
+          onComplete();
+          return;
+        }
+
+        // Stall detection: no progress for 75 seconds
+        const stallSeconds = Date.now() - lastProgressRef.current.time;
+        if (stallSeconds > 75_000) {
+          if (retriesRef.current < MAX_AUTO_RETRIES) {
+            // Auto-retrigger and capture error
+            retriesRef.current++;
+            lastProgressRef.current = { ...lastProgressRef.current, time: Date.now() };
+            setError(`Retrying (${retriesRef.current}/${MAX_AUTO_RETRIES})${lastErrorRef.current ? `: ${lastErrorRef.current}` : "..."}`);
+            kickOffGeneration(funnelId);
+          } else {
+            // Exhausted retries — show error to user
+            if (pollRef.current) clearInterval(pollRef.current);
+            setStalled(true);
+            const reason = lastErrorRef.current
+              ? `Last error: ${lastErrorRef.current}`
+              : "No error details available.";
+            setError(`Generation failed after ${MAX_AUTO_RETRIES} retries. ${reason}`);
+          }
+        }
+      } catch {
+        // ignore poll errors
+      }
+    }, 3000);
+  }, [onComplete]);
+
+  async function handleRetry() {
+    if (!createdFunnelId) return;
+    setStalled(false);
+    setError("");
+    retriesRef.current = 0;
+    lastProgressRef.current = { count: generatedCount, time: Date.now() };
+    await kickOffGeneration(createdFunnelId);
+    startPolling(createdFunnelId, pageNames);
+  }
+
   async function handleBriefComplete(brief: FunnelBrief) {
     setLoading(true);
     setError("");
+    setStalled(false);
     setGeneratingPage(-1);
     setGeneratedCount(0);
 
@@ -110,26 +211,14 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
       const { funnel } = await res.json();
       funnelCreated = true;
+      setCreatedFunnelId(funnel.id);
 
-      // Step 2: Generate pages one by one
-      for (let i = 0; i < names.length; i++) {
-        setGeneratingPage(i);
-        const genRes = await fetch("/api/funnel/generate-page", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ funnelId: funnel.id, pageIndex: i }),
-        });
+      // Step 2: Kick off server-side generation
+      setGeneratingPage(0);
+      await kickOffGeneration(funnel.id);
 
-        if (!genRes.ok) {
-          const data = await genRes.json().catch(() => ({}));
-          throw new Error(data.error || `Failed to generate ${names[i]}`);
-        }
-
-        setGeneratedCount(i + 1);
-      }
-
-      onComplete();
+      // Step 3: Poll for progress
+      startPolling(funnel.id, names);
     } catch (err) {
       if (funnelCreated) {
         onComplete();
@@ -204,7 +293,25 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             </div>
           ))}
         </div>
-        {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
+        {error && (
+          <div className="w-full space-y-3 mt-2">
+            <p className="text-sm text-red-500 text-center">{error}</p>
+            <div className="flex gap-2 justify-center">
+              <button
+                onClick={handleRetry}
+                className="px-4 py-2 rounded-lg bg-leaf-400 text-white text-sm font-medium hover:bg-leaf-400/90 transition-colors cursor-pointer"
+              >
+                Retry
+              </button>
+              <button
+                onClick={onComplete}
+                className="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 text-sm hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                Go to Dashboard
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

@@ -26,6 +26,22 @@ interface Props {
   funnelId: string;
 }
 
+function getFriendlyPageNames(pages: string[]): string[] {
+  if (pages.length === 0) return [];
+  if (pages.length === 1) {
+    const m = pages[0].match(/\d([A-Z][a-z].*)$/);
+    return [m ? m[1].replace(/([A-Z])/g, " $1").trim() : pages[0]];
+  }
+  let prefix = pages[0];
+  for (let i = 1; i < pages.length; i++) {
+    while (!pages[i].startsWith(prefix)) prefix = prefix.slice(0, -1);
+  }
+  return pages.map((p) => {
+    const suffix = p.slice(prefix.length);
+    return suffix ? suffix.replace(/([A-Z])/g, " $1").trim() : "Page";
+  });
+}
+
 export default function AnalyticsTab({ funnelId }: Props) {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,6 +83,7 @@ export default function AnalyticsTab({ funnelId }: Props) {
 
   const { steps, summary } = data;
   const maxVisitors = Math.max(...steps.map((s) => s.visitors), 1);
+  const friendlyNames = getFriendlyPageNames(steps.map((s) => s.pageName));
 
   // Metric cards
   const biggestDropOff = steps.reduce(
@@ -109,7 +126,7 @@ export default function AnalyticsTab({ funnelId }: Props) {
                   {i + 1}
                 </div>
                 <span className="text-xs text-gray-500 truncate">
-                  {step.pageName}
+                  {friendlyNames[i]}
                 </span>
               </div>
               {/* Bar */}
@@ -139,7 +156,7 @@ export default function AnalyticsTab({ funnelId }: Props) {
         <MetricCard
           label="Biggest drop-off"
           value={biggestDropOff ? `${biggestDropOff.dropOffPct}%` : "—"}
-          sub={biggestDropOff?.pageName}
+          sub={biggestDropOff ? friendlyNames[steps.indexOf(biggestDropOff)] : undefined}
         />
         <MetricCard
           label="Best CTA rate"
@@ -148,7 +165,7 @@ export default function AnalyticsTab({ funnelId }: Props) {
               ? `${Math.min((bestCta.ctaClicks / bestCta.visitors) * 100, 100).toFixed(1)}%`
               : "—"
           }
-          sub={bestCta?.pageName}
+          sub={bestCta ? friendlyNames[steps.indexOf(bestCta)] : undefined}
         />
         <MetricCard
           label="Email capture rate"

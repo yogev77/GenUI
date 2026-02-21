@@ -74,12 +74,21 @@ export async function GET(request: Request) {
       };
     });
 
+    // Unique visitors across ALL pages (for rates)
+    const allUniqueVisitors = new Set(
+      allEvents
+        .filter((e) => e.type === "page_view")
+        .map((e) => e.visitor_id || e.session_id)
+    );
+    const totalUniqueVisitors = allUniqueVisitors.size;
+
     // Calculate drop-off and conversion percentages
-    const totalVisitors = steps[0]?.visitors || 0;
+    // conversionPct is relative to first step (funnel progression)
+    const firstStepVisitors = steps[0]?.visitors || 0;
     for (let i = 0; i < steps.length; i++) {
       steps[i].conversionPct =
-        totalVisitors > 0
-          ? Math.round((steps[i].visitors / totalVisitors) * 100)
+        firstStepVisitors > 0
+          ? Math.round((steps[i].visitors / firstStepVisitors) * 100)
           : 0;
       if (i > 0) {
         const prev = steps[i - 1].visitors;
@@ -95,11 +104,11 @@ export async function GET(request: Request) {
     return NextResponse.json({
       steps,
       summary: {
-        totalVisitors,
+        totalVisitors: totalUniqueVisitors,
         totalPurchases,
         overallConversion:
-          totalVisitors > 0
-            ? Math.round((totalPurchases / totalVisitors) * 100)
+          totalUniqueVisitors > 0
+            ? Math.round((totalPurchases / totalUniqueVisitors) * 100)
             : 0,
       },
     });

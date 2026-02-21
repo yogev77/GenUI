@@ -1,7 +1,21 @@
 "use client";
 
 import { useState, useRef } from "react";
-import type { FunnelConfig, ProductInfo } from "@/lib/funnel-claude";
+import type { FunnelConfig, ProductInfo, FunnelColors } from "@/lib/funnel-claude";
+
+const DEFAULT_COLORS: FunnelColors = {
+  primary: "#2563eb",
+  secondary: "#1e293b",
+  accent: "#f59e0b",
+  background: "#ffffff",
+  dark: "#0f172a",
+};
+
+const DEFAULT_STYLE = {
+  colors: DEFAULT_COLORS,
+  fonts: { heading: "", body: "" },
+  styleNotes: "",
+};
 
 interface Props {
   funnel: FunnelConfig;
@@ -13,7 +27,9 @@ export default function BriefEditor({ funnel, onUpdate }: Props) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [replacingIdx, setReplacingIdx] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const replaceRef = useRef<HTMLInputElement>(null);
 
   const hasChanges =
     JSON.stringify(info) !== JSON.stringify(funnel.productInfo);
@@ -22,6 +38,27 @@ export default function BriefEditor({ funnel, onUpdate }: Props) {
     setSaving(true);
     setSaved(false);
     try {
+      // Collect image URL changes (old → new) to update page source code
+      const oldContexts = funnel.productInfo.imageContexts ?? [];
+      const newContexts = info.imageContexts ?? [];
+      const replacements: { oldUrl: string; newUrl: string }[] = [];
+
+      // Detect replaced images by position
+      for (let i = 0; i < Math.min(oldContexts.length, newContexts.length); i++) {
+        if (oldContexts[i].url !== newContexts[i].url) {
+          replacements.push({ oldUrl: oldContexts[i].url, newUrl: newContexts[i].url });
+        }
+      }
+      // Detect logo URL change (if not already covered by position changes)
+      if (
+        funnel.productInfo.logoUrl &&
+        info.logoUrl &&
+        funnel.productInfo.logoUrl !== info.logoUrl &&
+        !replacements.some((r) => r.oldUrl === funnel.productInfo.logoUrl)
+      ) {
+        replacements.push({ oldUrl: funnel.productInfo.logoUrl, newUrl: info.logoUrl });
+      }
+
       const res = await fetch("/api/funnel/brief", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -29,6 +66,16 @@ export default function BriefEditor({ funnel, onUpdate }: Props) {
         body: JSON.stringify({ funnelId: funnel.id, productInfo: info }),
       });
       if (res.ok) {
+        // Apply image URL replacements to page source code
+        for (const { oldUrl, newUrl } of replacements) {
+          await fetch("/api/funnel/replace-image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ funnelId: funnel.id, oldUrl, newUrl }),
+          });
+        }
+
         const data = await res.json();
         onUpdate(data.funnel);
         setSaved(true);
@@ -157,19 +204,36 @@ export default function BriefEditor({ funnel, onUpdate }: Props) {
                         Logo
                       </span>
                     )}
-                    <button
-                      onClick={() => {
-                        const next = info.imageContexts!.filter((_, j) => j !== i);
-                        const nextUrls = (info.imageUrls || []).filter((u) => u !== ic.url);
-                        const nextLogo = isLogo ? undefined : info.logoUrl;
-                        setInfo({ ...info, imageContexts: next, imageUrls: nextUrls, logoUrl: nextLogo });
-                      }}
-                      className="absolute top-1.5 right-1.5 w-6 h-6 bg-white/90 hover:bg-red-50 border border-gray-200 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                    >
-                      <svg className="w-3.5 h-3.5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
+                    <div className="absolute top-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Replace */}
+                      <button
+                        onClick={() => {
+                          setReplacingIdx(i);
+                          replaceRef.current?.click();
+                        }}
+                        className="w-6 h-6 bg-white/90 hover:bg-leaf-400/10 border border-gray-200 rounded-full flex items-center justify-center cursor-pointer"
+                        title="Replace image"
+                      >
+                        <svg className="w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      </button>
+                      {/* Delete */}
+                      <button
+                        onClick={() => {
+                          const next = info.imageContexts!.filter((_, j) => j !== i);
+                          const nextUrls = (info.imageUrls || []).filter((u) => u !== ic.url);
+                          const nextLogo = isLogo ? undefined : info.logoUrl;
+                          setInfo({ ...info, imageContexts: next, imageUrls: nextUrls, logoUrl: nextLogo });
+                        }}
+                        className="w-6 h-6 bg-white/90 hover:bg-red-50 border border-gray-200 rounded-full flex items-center justify-center cursor-pointer"
+                        title="Remove image"
+                      >
+                        <svg className="w-3.5 h-3.5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                   <div className="p-2 space-y-1.5">
                     <textarea
@@ -243,6 +307,63 @@ export default function BriefEditor({ funnel, onUpdate }: Props) {
           }}
           className="hidden"
         />
+        {/* Hidden input for replacing images */}
+        <input
+          ref={replaceRef}
+          type="file"
+          accept="image/*"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            const idx = replacingIdx;
+            if (!file || idx === null || !info.imageContexts?.[idx]) {
+              setReplacingIdx(null);
+              return;
+            }
+            setUploading(true);
+            try {
+              const oldUrl = info.imageContexts[idx].url;
+
+              // Upload new image
+              const formData = new FormData();
+              formData.append("file", file);
+              formData.append("context", info.imageContexts[idx].context);
+              const res = await fetch("/api/funnel/upload-image", {
+                method: "POST",
+                credentials: "include",
+                body: formData,
+              });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error || "Upload failed");
+
+              const newUrl = data.url;
+
+              // Replace in deployed pages immediately
+              await fetch("/api/funnel/replace-image", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ funnelId: funnel.id, oldUrl, newUrl }),
+              });
+
+              // Update local state
+              const nextContexts = info.imageContexts.map((ic, j) =>
+                j === idx ? { ...ic, url: newUrl } : ic
+              );
+              const nextUrls = (info.imageUrls || []).map((u) =>
+                u === oldUrl ? newUrl : u
+              );
+              const nextLogo = info.logoUrl === oldUrl ? newUrl : info.logoUrl;
+              setInfo({ ...info, imageContexts: nextContexts, imageUrls: nextUrls, logoUrl: nextLogo });
+            } catch (err) {
+              console.error("Image replace failed:", err);
+            } finally {
+              setUploading(false);
+              setReplacingIdx(null);
+              if (replaceRef.current) replaceRef.current.value = "";
+            }
+          }}
+          className="hidden"
+        />
         <button
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
@@ -257,6 +378,107 @@ export default function BriefEditor({ funnel, onUpdate }: Props) {
             "+ Add Image"
           )}
         </button>
+      </div>
+
+      {/* Design */}
+      <div>
+        <label className="block text-xs text-gray-500 mb-2">Design</label>
+
+        {/* Color Palette */}
+        <div className="mb-4">
+          <p className="text-xs text-gray-400 mb-2">Color Palette</p>
+          <div className="flex flex-wrap gap-3">
+            {(["primary", "secondary", "accent", "background", "dark"] as const).map((key) => (
+              <div key={key} className="flex flex-col items-center gap-1">
+                <label className="relative w-10 h-10 rounded-lg border border-gray-200 overflow-hidden cursor-pointer">
+                  <input
+                    type="color"
+                    value={info.style?.colors?.[key] || DEFAULT_COLORS[key]}
+                    onChange={(e) => {
+                      const colors: FunnelColors = {
+                        ...DEFAULT_COLORS,
+                        ...info.style?.colors,
+                        [key]: e.target.value,
+                      };
+                      setInfo({
+                        ...info,
+                        style: { ...DEFAULT_STYLE, ...info.style, colors },
+                      });
+                    }}
+                    className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
+                  />
+                  <div
+                    className="w-full h-full"
+                    style={{ backgroundColor: info.style?.colors?.[key] || DEFAULT_COLORS[key] }}
+                  />
+                </label>
+                <span className="text-[10px] text-gray-400 capitalize">{key}</span>
+                <span className="text-[10px] text-gray-300 font-mono">
+                  {(info.style?.colors?.[key] || DEFAULT_COLORS[key]).toUpperCase()}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Fonts */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Heading Font</label>
+            <input
+              type="text"
+              value={info.style?.fonts?.heading || ""}
+              placeholder="e.g. Poppins, Inter, system-ui"
+              onChange={(e) => {
+                const fonts = {
+                  heading: e.target.value,
+                  body: info.style?.fonts?.body || "",
+                };
+                setInfo({
+                  ...info,
+                  style: { ...DEFAULT_STYLE, ...info.style, fonts },
+                });
+              }}
+              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-leaf-400 focus:ring-1 focus:ring-leaf-400"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Body Font</label>
+            <input
+              type="text"
+              value={info.style?.fonts?.body || ""}
+              placeholder="e.g. Inter, system-ui"
+              onChange={(e) => {
+                const fonts = {
+                  heading: info.style?.fonts?.heading || "",
+                  body: e.target.value,
+                };
+                setInfo({
+                  ...info,
+                  style: { ...DEFAULT_STYLE, ...info.style, fonts },
+                });
+              }}
+              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-leaf-400 focus:ring-1 focus:ring-leaf-400"
+            />
+          </div>
+        </div>
+
+        {/* Style Notes */}
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Style Notes</label>
+          <textarea
+            value={info.style?.styleNotes || ""}
+            onChange={(e) =>
+              setInfo({
+                ...info,
+                style: { ...DEFAULT_STYLE, ...info.style, styleNotes: e.target.value },
+              })
+            }
+            rows={2}
+            placeholder="Additional design instructions..."
+            className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-leaf-400 focus:ring-1 focus:ring-leaf-400 resize-none"
+          />
+        </div>
       </div>
 
       <div className="flex items-center gap-3">

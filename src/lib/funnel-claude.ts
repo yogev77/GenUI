@@ -1,7 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
 import type { PageSpec } from "./funnel-types";
-
-const client = new Anthropic();
+import { anthropicClient as client, setUsageContext } from "./usage";
 
 // ── Types ──────────────────────────────────────────────────────────
 
